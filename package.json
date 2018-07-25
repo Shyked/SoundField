@@ -1,0 +1,14 @@
+{
+  "name": "asmr",
+  "version": "1.0.0",
+  "description": "",
+  "dependencies": {
+    "express": "^4.16.3",
+    "gulp": "^3.9.1",
+    "gulp-less": "^3.5.0"
+  },
+  "scripts": {
+    "start": "gulp run"
+  },
+  "devDependencies": {}
+}
