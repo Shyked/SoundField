@@ -42,7 +42,7 @@ window.EventHandler = function () {
     this._unregisterEvents = function () {
         for (var i in this._events) {
             var ev = this._events[i];
-            ev.el.off(ev.event, ev.handler);
+            ev.el.removeEventListener(ev.event, ev.handler);
         }
         this._events = [];
         for (var i in this._mutationObservers) {

@@ -1,4 +1,6 @@
-
+/*
+  Handles the whole stage containing sound sources, listener etc
+*/
 var Stage = function(soundSourcesJson, listenerJson) {
 
   EventHandler.apply(this);
@@ -9,16 +11,21 @@ var Stage = function(soundSourcesJson, listenerJson) {
   this._master = null;
   this._mover = null;
   this._listener = null;
+  this._drawer = null;
+  this._drawing = true;
 
   this._init = function() {
     this._soundSourcesJson = soundSourcesJson;
     this._listenerJson = listenerJson;
 
     this._mover = new MoverKeyboard(listenerJson.pos);
+    this._drawer = new Drawer();
 
     this.buildRealTime();
 
     this._initEvents();
+
+    this._draw();
   };
 
   this._initEvents = function() {
@@ -31,16 +38,22 @@ var Stage = function(soundSourcesJson, listenerJson) {
   this._initListener = function() {
     this._listener = new Listener(this._master.context, this._listenerJson.skin);
     this._listener.setPosition(this._listenerJson.pos.x, this._listenerJson.pos.z);
+    this._drawer.addObjectDisplay(this._listener.getDisplay());
   };
 
   this._build = function() {
     for (var i in soundSourcesJson) {
-      var soundSource = new SoundSource(this._master, soundSourcesJson[i].sound, soundSourcesJson[i].skin);
-      soundSource.setPosition(soundSourcesJson[i].pos.x, soundSourcesJson[i].pos.z);
-      this._soundSources.push(soundSource);
+      this._addSource(soundSourcesJson[i]);
     }
     this._mover.reset(this._listenerJson.pos);
     this._initListener();
+  };
+
+  this._addSource = function(soundSourceJson) {
+    var soundSource = new SoundSource(this._master, soundSourceJson.sound, soundSourceJson.skin);
+    soundSource.setPosition(soundSourceJson.pos.x, soundSourceJson.pos.z);
+    this._soundSources.push(soundSource);
+    this._drawer.addObjectDisplay(soundSource.getDisplay());
   };
 
   this._purge = function() {
@@ -72,6 +85,19 @@ var Stage = function(soundSourcesJson, listenerJson) {
     this._master.gain.setValueAtTime(1, audioContext.currentTime);
     this._master.connect(audioContext.destination);
     return this._master;
+  };
+
+  this._draw = function() {
+    this._drawer.draw(this._objectsDisplay);
+    if (this._drawing) {
+      var that = this;
+      // requestAnimationFrame(function() {
+      //   that._draw();
+      // });
+      setTimeout(function() {
+        that._draw();
+      }, 1000);
+    }
   };
 
   this.buildRealTime = function() {
@@ -111,6 +137,7 @@ var Stage = function(soundSourcesJson, listenerJson) {
     };
     recorder.record();
     this._master.context.startRendering().then(function(renderedBuffer) {
+      // Code below will redirect generated sound to the real time context upon completion
       // var audioResult = AUDIO_CONTEXT.createBufferSource();
       // audioResult.buffer = renderedBuffer;
       // audioResult.connect(AUDIO_CONTEXT.destination);
@@ -121,6 +148,7 @@ var Stage = function(soundSourcesJson, listenerJson) {
 
   this.destroy = function() {
     this._trigger('destroy');
+    this._drawing = false;
   };
 
   this._init();

@@ -9,9 +9,9 @@ var Mover = function() {
     
   };
 
-  this.destroy = function() {
-    this._trigger('destroy');
-  };
+  // this.destroy = function() {
+  //   this._trigger('destroy');
+  // };
 
   this._init();
 

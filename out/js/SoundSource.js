@@ -2,12 +2,12 @@
 var SoundSource = function(master, sound, skin) {
 
   EventHandler.apply(this);
+  Displayable.apply(this);
 
-  this._display = null;
   this._sound = null;
 
   this._init = function() {
-    if (ObjectDisplay) this._display = new ObjectDisplay(skin);
+    this.setDisplay(skin);
     this._sound = new ObjectSound(master, sound);
   };
 
@@ -19,9 +19,9 @@ var SoundSource = function(master, sound, skin) {
     this._sound.stop();
   };  
 
-  this.setPosition = function(x, y) {
-    if (this._display) this._display.setPosition(x, y);
-    this._sound.setPosition(x, y);
+  this.setPosition = function(x, z) {
+    this._sound.setPosition(x, z);
+    this._trigger('position', x, z);
   };
 
   this.updateDistanceFromListener = function(x, z) {
@@ -30,7 +30,6 @@ var SoundSource = function(master, sound, skin) {
 
   this.destroy = function() {
     this._trigger('destroy');
-    this._display.destroy();
     this._sound.destroy();
   };
 

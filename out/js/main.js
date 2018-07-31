@@ -1,10 +1,9 @@
+(function() {
 
-var hasStarted = false;
 
-document.getElementById('board').addEventListener('click', function() {
+  /* MAIN */
 
-  if (!hasStarted) {
-    hasStarted = true;
+  var main = function() {
 
     window.AUDIO_CONTEXT = new (window.AudioContext || window.webkitAudioContext)();
 
@@ -35,12 +34,40 @@ document.getElementById('board').addEventListener('click', function() {
     });
 
 
-    stage.play();
+    // stage.play();
+
+  };
 
 
-  }
 
-});
+  /* REQUIRE */
+
+  require([
+    'jsiso/canvas/Control',
+    'jsiso/canvas/Input',
+    'jsiso/img/load',
+    'jsiso/json/load',
+    'jsiso/tile/Field',
+    'requirejs/domReady!'
+  ],
+  function(CanvasControl, CanvasInput, imgLoader, jsonLoader, TileField) {
+    window.CanvasControl = CanvasControl;
+    window.CanvasInput = CanvasInput;
+    window.imgLoader = imgLoader;
+    window.jsonLoader = jsonLoader;
+    window.TileField = TileField;
+
+    var start = function() {
+      this.removeEventListener('click', start);
+      main();
+    };
+    document.getElementById('board').addEventListener('click', start);
+  });
+
+})();
+
+
+
 
 
 

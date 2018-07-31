@@ -1,4 +1,10 @@
-
+/*
+  Used as a sound emitter.
+  It emmits a specific sound at a specific place.
+  Uses panner & convolver
+  master: AudioNode where the sound is directed
+  url:    URL where is located the sound to play
+*/
 var ObjectSound = function(master, url) {
 
   EventHandler.apply(this);

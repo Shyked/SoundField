@@ -1,7 +1,12 @@
-
+/*
+  Handles the position of the listener.
+  audioContext:   In which audioContext the Listener is located
+  skin:           Displayed skin
+*/
 var Listener = function(audioContext, skin) {
 
   EventHandler.apply(this);
+  Displayable.apply(this);
 
   this._x = 0;
   this._z = 0;
