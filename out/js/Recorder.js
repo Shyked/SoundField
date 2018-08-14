@@ -1,11 +1,9 @@
 
-var Recorder = function(input) {
+class Recorder extends EventHandler {
 
-  EventHandler.apply(this);
+  constructor(input) {
+    super();
 
-  this._webAudioRecorder = null;
-
-  this._init = function() {
     this._webAudioRecorder = new WebAudioRecorder(input, {
       workerDir: "vendor/WebAudioRecorder/", // must end with slash
       encoding: "mp3",
@@ -17,30 +15,27 @@ var Recorder = function(input) {
     this._initEvents();
   };
 
-  this._initEvents = function() {
-    var that = this;
-    this._webAudioRecorder.onComplete = function(rec, blob) {
-      that._trigger('finish', URL.createObjectURL(blob));
+  _initEvents() {
+    this._webAudioRecorder.onComplete = (rec, blob) => {
+      this._trigger('finish', URL.createObjectURL(blob));
     };
   };
 
-  this.record = function() {
+  record() {
     this._webAudioRecorder.startRecording();
   };
 
-  this.finish = function() {
+  finish() {
     this._webAudioRecorder.finishRecording();
   };
 
-  this.cancel = function() {
+  cancel() {
     this._webAudioRecorder.cancelRecording();
   };
 
-  this.destroy = function() {
+  destroy() {
     this._trigger('destroy');
     this.cancel();
   };
-
-  this._init();
 
 };

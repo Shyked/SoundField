@@ -1,36 +1,33 @@
 
-var MoverKeyboard = function(pos) {
+class MoverKeyboard extends Mover {
 
-  EventHandler.apply(this);
-  Mover.apply(this);
+  constructor(pos) {
+    super();
 
-  this._keys = {
-    left: false,
-    up: false,
-    right: false,
-    down: false
-  };
+    this._pos = {
+      x: pos.x,
+      y: pos.y,
+      z: pos.z
+    };
 
-  this._pos = {
-    x: 0,
-    z: 0
-  };
+    this._vel = {
+      x: 0,
+      z: 0
+    };
 
-  this._vel = {
-    x: 0,
-    z: 0
-  };
+    this._keys = {
+      left: false,
+      up: false,
+      right: false,
+      down: false
+    };
 
-  this._init = function() {
-    this._pos.x = pos.x;
-    this._pos.z = pos.z;
-
-    this._loop();
+    this._looping = false;
 
     this._initEvents();
   };
 
-  this._initEvents = function() {
+  _initEvents() {
     this._registerEvent(
       window, 'keydown',
       this._keyHandler);
@@ -45,7 +42,7 @@ var MoverKeyboard = function(pos) {
       this._touchHandler);
   };
 
-  this._keyHandler = function(e) {
+  _keyHandler(e) {
     var enable = e.type == "keydown";
     switch (e.code) {
       case "ArrowLeft":
@@ -65,14 +62,15 @@ var MoverKeyboard = function(pos) {
         this._keys.down = enable;
         break;
     }
+    this._startLoop();
   };
 
-  this._touchHandler = function(e) {
+  _touchHandler(e) {
     this._vel.x = (e.touches[0].pageX - this._pos.x) / 10;
     this._vel.z = (e.touches[0].pageY - this._pos.z) / 10;
   };
 
-  this._loop = function() {
+  _loop() {
     this._vel.x = (this._vel.x + (this._keys.right ? 1 : 0) - (this._keys.left ? 1 : 0)) / 1.2;
     this._vel.z = (this._vel.z + (this._keys.down ? 1 : 0) - (this._keys.up ? 1 : 0)) / 1.2;
 
@@ -83,24 +81,29 @@ var MoverKeyboard = function(pos) {
         this._pos.x,
         this._pos.z,
         window.utils.toAngleDist({ x: this._vel.x, y: this._vel.z }).angle);
+      requestAnimationFrame(() => {
+        this._loop();
+      });
     }
+    else this._looping = false;
 
-    var that = this;
-    requestAnimationFrame(function() {
-      that._loop();
-    });
   };
 
-  this.reset = function(pos) {
+  _startLoop() {
+    if (!this._looping) {
+      this._looping = true;
+      this._loop();
+    }
+  }
+
+  reset(pos) {
     this._pos.x = pos.x;
     this._pos.z = pos.z;
     this._vel = { x: 0, z: 0 };
   };
 
-  this.destroy = function() {
+  destroy() {
     this._trigger('destroy');
   };
-
-  this._init();
 
 };

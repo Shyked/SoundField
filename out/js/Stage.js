@@ -1,85 +1,86 @@
 /*
-  Handles the whole stage containing sound sources, listener etc
+  Handles the whole stage containing elements, field, listener etc
 */
-var Stage = function(soundSourcesJson, listenerJson) {
+class Stage extends EventHandler {
 
-  EventHandler.apply(this);
+  constructor(mapName) {
+    super();
+    this._mapProps = null;
+    this._preCalculatedMap = null;
+    this._elements = [];
+    this._master = null;
+    this._mover = null;
+    this._listener = null;
+    this._drawing = true;
+    this._frameInterval = 0;
 
-  this._soundSourcesJson = [];
-  this._listenerJson = [];
-  this._soundSources = [];
-  this._master = null;
-  this._mover = null;
-  this._listener = null;
-  this._drawer = null;
-  this._drawing = true;
+    this.setFps(1);
 
-  this._init = function() {
-    this._soundSourcesJson = soundSourcesJson;
-    this._listenerJson = listenerJson;
+    this._loadMap(mapName);
+  }
 
-    this._mover = new MoverKeyboard(listenerJson.pos);
-    this._drawer = new Drawer();
-
-    this.buildRealTime();
-
-    this._initEvents();
-
-    this._draw();
-  };
-
-  this._initEvents = function() {
-    var that = this;
-    this._mover.on('move', function(x, z, angle) {
-      that._updateListenerPosition(x, z, angle);
+  _initEvents() {
+    this._mover.on('move', (x, y, z, angle) => {
+      that._updateListenerPosition(x, y, z, angle);
     })
   };
 
-  this._initListener = function() {
-    this._listener = new Listener(this._master.context, this._listenerJson.skin);
-    this._listener.setPosition(this._listenerJson.pos.x, this._listenerJson.pos.z);
-    this._drawer.addObjectDisplay(this._listener.getDisplay());
+  async _loadMap(mapName) {
+    this._mapProps = await MapLoader.load(mapName);
+    Drawer.setMap(this._mapProps);
+    this._mover = new MoverKeyboard(this._mapProps.listener.pos);
+    this._initEvents();
+    this.buildRealTime();
+    this._draw();
+  }
+
+  _initListener() {
+    this._listener = new Listener(this._master.context, this._mapProps.listener.skin);
+    this._listener.setPosition(this._mapProps.listener.pos.x, this._mapProps.listener.pos.y, this._mapProps.listener.pos.z);
+    Drawer.addObjectDisplay(this._listener.getDisplay());
   };
 
-  this._build = function() {
-    for (var i in soundSourcesJson) {
-      this._addSource(soundSourcesJson[i]);
+  _build() {
+    for (let i in this._mapProps.elements) {
+      this._addElement(this._mapProps.elements[i]);
     }
-    this._mover.reset(this._listenerJson.pos);
+    this._preCalculatedMap = new PreCalculatedMap(this._mapProps.layout, this._mapProps.tilesCollisions, this._elements);
+    this._mover.reset(this._mapProps.listener.pos);
     this._initListener();
   };
 
-  this._addSource = function(soundSourceJson) {
-    var soundSource = new SoundSource(this._master, soundSourceJson.sound, soundSourceJson.skin);
-    soundSource.setPosition(soundSourceJson.pos.x, soundSourceJson.pos.z);
-    this._soundSources.push(soundSource);
-    this._drawer.addObjectDisplay(soundSource.getDisplay());
+  _addElement(elementJson) {
+    let element = new Element(this._master, elementJson.sound, elementJson.skin, elementJson.options);
+    element.setPosition(elementJson.pos.x, elementJson.pos.y, elementJson.pos.z);
+    this._elements.push(element);
+    Drawer.addObjectDisplay(element.getDisplay());
   };
 
-  this._purge = function() {
-    for (var i in this._soundSources) {
-      this._soundSources[i].destroy();
+  _purge() {
+    for (let i in this._elements) {
+      this._elements[i].destroy();
     }
-    this._soundSources = [];
+    this._elements = [];
     if (this._listener) {
       this._listener.destroy();
       this._listener = null;
     }
+    Drawer.resetObjectsDisplay();
   };
 
-  this._updateListenerPosition = function(x, z, angle) {
-    this._listener.setPosition(x, z);
+  _updateListenerPosition(x, y, z, angle) {
+    this._listener.setPosition(x, y, z);
     this._listener.setOrientation(angle);
-    this._updateDistanceFromListener(x, z);
+    this._updateDistanceFromListener(x, y, z);
   };
 
-  this._updateDistanceFromListener = function(x, z) {
-    for (var i in this._soundSources) {
-      this._soundSources[i].updateDistanceFromListener(x, z);
+  _updateDistanceFromListener(x, y, z) {
+    for (var i in this._elements) {
+      this._elements[i].updateDistanceFromListener(x, y, z);
     }
   };
 
-  this._initMaster = function(audioContext) {
+  _initMaster(audioContext) {
     if (this._master) this._master.disconnect();
     this._master = audioContext.createGain();
     this._master.gain.setValueAtTime(1, audioContext.currentTime);
@@ -87,48 +88,56 @@ var Stage = function(soundSourcesJson, listenerJson) {
     return this._master;
   };
 
-  this._draw = function() {
-    this._drawer.draw(this._objectsDisplay);
+  _draw() {
+    Drawer.draw(this._preCalculatedMap.elementsMap);
     if (this._drawing) {
       var that = this;
-      // requestAnimationFrame(function() {
-      //   that._draw();
-      // });
-      setTimeout(function() {
-        that._draw();
-      }, 1000);
+      if (this._frameInterval < 17) {
+        requestAnimationFrame(function() {
+          that._draw();
+        });
+      }
+      else {
+        setTimeout(function() {
+          that._draw();
+        }, this._frameInterval);
+      }
     }
   };
 
-  this.buildRealTime = function() {
+  setFps(fps) {
+    this._frameInterval = 1000 / fps;
+  }
+
+  buildRealTime() {
     this._purge();
     this._initMaster(window.AUDIO_CONTEXT);
     this._build();
   };
 
-  this.buildOffline = function(duration) {
+  buildOffline(duration) {
     if (!duration) duration = 30;
     this._purge();
-    var offlineAudioContext = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, AUDIO_CONTEXT.sampleRate * duration, AUDIO_CONTEXT.sampleRate);
+    let offlineAudioContext = new (window.OfflineAudioContext || window.webkitOfflineAudioContext)(2, AUDIO_CONTEXT.sampleRate * duration, AUDIO_CONTEXT.sampleRate);
     this._initMaster(offlineAudioContext);
     this._build();
   };
 
-  this.play = function() {
-    for (var i in this._soundSources) {
-      this._soundSources[i].play();
+  play() {
+    for (let i in this._elements) {
+      this._elements[i].play();
     }
   };
 
-  this.stop = function() {
-    for (var i in this._soundSources) {
-      this._soundSources[i].stop();
+  stop() {
+    for (let i in this._elements) {
+      this._elements[i].stop();
     }
   };
 
-  this.record = function() {
+  record() {
     this.buildOffline();
-    var recorder = new Recorder(this._master);
+    let recorder = new Recorder(this._master);
     recorder.on('finish', function(url) {
       console.log(url);
     });
@@ -146,11 +155,10 @@ var Stage = function(soundSourcesJson, listenerJson) {
     this.play();
   };
 
-  this.destroy = function() {
-    this._trigger('destroy');
+  destroy() {
     this._drawing = false;
+    this._trigger('destroy');
+    this._purge();
   };
-
-  this._init();
 
 };

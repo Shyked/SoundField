@@ -6,32 +6,8 @@
   var main = function() {
 
     window.AUDIO_CONTEXT = new (window.AudioContext || window.webkitAudioContext)();
-
-    window.stage = new Stage([
-      {
-        sound: "resources/Rain gentle window.ogg",
-        skin: "source",
-        pos: { x: 500, z: 100 }
-      },
-      {
-        sound: "resources/Night road.ogg",
-        skin: "source",
-        pos: { x: 100, z: 300 }
-      },
-      {
-        sound: "resources/Rain medium 2.ogg",
-        skin: "source",
-        pos: { x: 200, z: 500 }
-      },
-      {
-        sound: "resources/Rain medium.ogg",
-        skin: "source",
-        pos: { x: 350, z: 400 }
-      }
-    ], {
-      skin: "listener",
-      pos: { x: 200, z: 200 }
-    });
+    
+    window.stage = new Stage("sample");
 
 
     // stage.play();
@@ -40,29 +16,13 @@
 
 
 
-  /* REQUIRE */
+  /* Start */
 
-  require([
-    'jsiso/canvas/Control',
-    'jsiso/canvas/Input',
-    'jsiso/img/load',
-    'jsiso/json/load',
-    'jsiso/tile/Field',
-    'requirejs/domReady!'
-  ],
-  function(CanvasControl, CanvasInput, imgLoader, jsonLoader, TileField) {
-    window.CanvasControl = CanvasControl;
-    window.CanvasInput = CanvasInput;
-    window.imgLoader = imgLoader;
-    window.jsonLoader = jsonLoader;
-    window.TileField = TileField;
-
-    var start = function() {
-      this.removeEventListener('click', start);
-      main();
-    };
-    document.getElementById('board').addEventListener('click', start);
-  });
+  var start = function() {
+    this.removeEventListener('click', start);
+    main();
+  };
+  document.getElementById('board').addEventListener('click', start);
 
 })();
 

@@ -5,28 +5,20 @@
   master: AudioNode where the sound is directed
   url:    URL where is located the sound to play
 */
-var ObjectSound = function(master, url) {
+class ObjectSound extends EventHandler {
 
-  EventHandler.apply(this);
+  constructor(master, url) {
+    super();
 
-  this._id = 0;
-  this._url = url;
-  this._master = master;
-  this._x = 0;
-  this._z = 0;
-  this._distance = 0;
-  this._audioElement = null;
-  this._audioSource = null;
-  this._offline = false;
-
-  this._panner = null;
-  this._convolver = null;
-  this._gain = null;
-  this._convolverGain = null;
-
-  this._init = function() {
-    this._id = window.utils.generateUniqueId();
-
+    this._id = window.utils.generateUniqueId();;
+    this._url = url;
+    this._master = master;
+    this._x = 0;
+    this._y = 0;
+    this._z = 0;
+    this._distance = 0;
+    this._audioElement = null;
+    this._audioSource = null;
     this._offline = !!this._master.context.length;
 
     this._initAudioSource();
@@ -41,7 +33,7 @@ var ObjectSound = function(master, url) {
     this._initEvents();
   };
 
-  this._initAudioSource = function() {
+  _initAudioSource() {
     this._audioElement = document.createElement('audio');
     this._audioElement.src = this._url;
     this._audioElement.type = "audio/mpeg";
@@ -49,11 +41,11 @@ var ObjectSound = function(master, url) {
     this._audioSource = this._master.context.createMediaElementSource(this._audioElement);
   };
 
-  this._initEvents = function() {
+  _initEvents() {
     this.on('distanceChanged', this._updateGains);
   };
 
-  this._connect = function() {
+  _connect() {
     this._audioSource
       .connect(this._panner);
 
@@ -67,7 +59,7 @@ var ObjectSound = function(master, url) {
       .connect(this._master);
   };
 
-  this._disconnect = function() {
+  _disconnect() {
     this._audioSource.disconnect();
     this._convolver.disconnect();
     this._convolverGain.disconnect();
@@ -75,7 +67,7 @@ var ObjectSound = function(master, url) {
     this._globalGain.disconnect();
   };
 
-  this._createPanner = function() {
+  _createPanner() {
     var panner = this._master.context.createPanner();
     panner.panningModel = 'HRTF';
     panner.distanceModel = 'inverse';
@@ -88,23 +80,22 @@ var ObjectSound = function(master, url) {
     return panner;
   };
 
-  this._createReverb = function() {
+  _createReverb() {
     var convolver = this._master.context.createConvolver();
     convolver.buffer = ObjectSound.impulseResponse(this._master.context, 3, 20, false);
     return convolver;
   };
 
-  this._createGain = function() {
+  _createGain() {
     var gain = this._master.context.createGain();
-    gain.gain = 0;
+    gain.gain.setValueAtTime(0, this._master.context.currentTime);
     return gain;
   };
 
-  this._updateGains = function() {
-    var that = this;
-    var updateGains = function() {
-      that._globalGain.gain.setValueAtTime(1 / (1 + that._distance * that._distance / 10000), that._master.context.currentTime);
-      that._convolverGain.gain.setValueAtTime(Math.min(that._distance, 500) / 100, that._master.context.currentTime);
+  _updateGains() {
+    var updateGains = () => {
+      this._globalGain.gain.setValueAtTime(1 / (1 + this._distance * this._distance / 10000), this._master.context.currentTime);
+      this._convolverGain.gain.setValueAtTime(Math.min(this._distance, 500) / 100, this._master.context.currentTime);
     };
     if (this._offline) updateGains();
     else {
@@ -114,41 +105,40 @@ var ObjectSound = function(master, url) {
     }
   };
 
-  this.getId = function() {
+  getId() {
     return this._id;
   };
 
-  this.play = function() {
+  play() {
     this._audioElement.play();
   };
 
-  this.pause = function() {
+  pause() {
     this._audioElement.pause();
   }
 
-  this.stop = function() {
+  stop() {
     this._audioElement.pause();
     this._audioElement.currentTime = 0;
   };
 
-  this.setPosition = function(x, z) {
+  setPosition(x, y, z) {
     this._x = x;
+    this._y = y;
     this._z = z;
-    this._panner.setPosition(x, 0.8, z);
+    this._panner.setPosition(x, y + 0.8, z); // 0.8 : Head
   };
 
-  this.updateDistanceFromListener = function(x, z) {
-    this._distance = window.utils.distance({x: this._x, y: this._z}, {x: x, y: z});
+  updateDistanceFromListener(x, y, z) {
+    this._distance = window.utils.distance({x: this._x, y: this._y, z: this._z}, {x: x, y: y, z: z});
     this._trigger('distanceChanged');
   };
 
-  this.destroy = function() {
+  destroy() {
     this._trigger('destroy');
     this.stop();
     this._disconnect();
   };
-
-  this._init();
 
 };
 

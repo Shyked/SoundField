@@ -1,30 +1,38 @@
 
-var ObjectDisplay = function(shape) {
+class ObjectDisplay extends EventHandler {
 
-  EventHandler.apply(this);
-
-  this._x = 0;
-  this._z = 0;
-  this._shape = shape;
-  this._container = null;
-
-  this._init = function() {
-    
+  constructor(skin) {
+    super();
+    this._x = 0;
+    this._y = 0;
+    this._z = 0;
+    this._skin = skin;
+    this._container = null;
+    this._img = null;
+    this._loadSkin();
   };
 
-  this.setPosition = function(x, z) {
+  async _loadSkin() {
+    let res = await ImgLoader({ graphics: [this._skin] });
+    this._img = res.files[Object.keys(res.files)[0]];
+  }
+
+  get img() {
+    return this._img;
+  }
+
+  setPosition(x, y, z) {
     this._x = x;
+    this._y = y;
     this._z = z;
   };
 
-  this.setOrientation = function(x, z) {
+  setOrientation(x, y, z) {
     
   };
 
-  this.destroy = function() {
+  destroy() {
     this._trigger('destroy');
   };
-
-  this._init();
 
 };

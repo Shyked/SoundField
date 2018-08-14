@@ -48,6 +48,10 @@
       return Math.sqrt(
         (pos2.x - pos1.x) * (pos2.x - pos1.x)
         + (pos2.y - pos1.y) * (pos2.y - pos1.y)
+        + ( typeof pos1.z != "undefined"
+            ? (pos2.z - pos1.z) * (pos2.z - pos1.z)
+            : 0
+          )
         );
     },
 

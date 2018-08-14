@@ -1,18 +1,12 @@
 
-var Mover = function() {
+class Mover extends EventHandler {
 
-  EventHandler.apply(this);
+  constructor() {
+    super();
+  }
 
-  
-
-  this._init = function() {
-    
+  destroy() {
+    this._trigger('destroy');
   };
-
-  // this.destroy = function() {
-  //   this._trigger('destroy');
-  // };
-
-  this._init();
 
 };

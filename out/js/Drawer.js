@@ -1,102 +1,80 @@
+(function() {
 
-var Drawer = function() {
+  class Drawer extends EventHandler {
 
-  EventHandler.apply(this);
+    constructor() {
+      super();
+      this._mapProps = null;
 
-  this._objectsDisplay = [];
-  this._context = null;
-  this._mapLayout = null;
-  this._tileField = null;
-  this._maxHeight = 0;
+      this._objectsDisplay = [];
+      this._context = null;
+      this._tileField = null;
+      this._zoom = 0.5;
 
-  this._init = function() {
-    this._context = CanvasControl.create("graphicBoard", window.innerWidth, window.innerHeight, {
-      display: "block",
-      marginLeft: "auto",
-      marginRight: "auto"
-    });
+      this._depth = 0;
 
-    // this._mapLayout = [
-    //   [[1], [1], [1], [1], [1], [1], [1], [1], [1], []],
-    //   [[1], [1], [1], [1], [1], [1], [1], [1], [1], [1]],
-    //   [[1], [1], [1], [1], [1], [1], [1], [1], [1], [1]],
-    //   [[1], [1], [1], [1], [1], [1], [1], [1], [1], [1]],
-    //   [[1], [1], [1], [1, 1, 1, 1], [1, 1, 1], [1, 0, 0 ,1], [1], [1], [1], [1]],
-    //   [[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1, 1], [1], [1], [0], [1], [1], [1]],
-    //   [[1], [1], [1], [1, 1], [1], [1], [1], [1], [1], [1]],
-    //   [[1], [1], [1], [1], [1, 1], [1], [1], [1], [1], [1]],
-    //   [[1], [1], [1], [1], [1], [1], [1], [1], [1], [1]],
-    //   [[1], [1], [1], [1], [1], [1], [1], [1], [1], [1]]
-    //   ];
+      this._context = CanvasControl.create("canvasBoard", window.innerWidth, window.innerHeight, {
+        display: "block",
+        marginLeft: "auto",
+        marginRight: "auto"
+      });
+    }
 
-    this._mapLayout = [
-      [[1], [1], [1], [1], [1], [1], [1], [1], [1], [1]],
-      [[1], [1], [1], [1], [1], [1], [1], [1], [1], [1]],
-      [[1], [1], [1, 1, 1, 1, 1], [1, 1, 1, 1], [1, 1], [1], [1], [1, 1], [1], [1]],
-      [[1], [1], [1], [1], [1], [1], [1, 1], [1], [1], [1]],
-      [[1], [1], [1, 1, 1, 1, 1], [1, 1, 1, 1], [1, 1], [1], [1], [1], [1], [1]],
-      [[1], [1, 0, 0, 1], [1], [1], [1], [1], [1], [1], [1], [1]],
-      [[1], [1], [1, 1], [1], [1], [1], [1], [1], [1], [1]],
-      [[1, 1], [1], [1, 1], [1], [1, 1], [1], [1, 1], [1, 0, 1], [1], [1]],
-      [[1, 1], [1], [1], [1], [1], [1], [1], [1], [1], [1]],
-      [[1], [1, 1, 1], [1], [1], [1], [1], [1], [1], [1], [1]],
-    ];
+    async setMap(mapProps) {
+      this._mapProps = mapProps;
+      let imgResponse = await ImgLoader({ graphics: mapProps.tiles });
 
-    var img = document.createElement('img');
-    var img2 = document.createElement('img');
-    img.onload = () => {
       this._tileField = new TileField(this._context, CanvasControl().height, CanvasControl().width);
       this._tileField.setup({
         title: "Graphics",
         zeroIsBlank: true,
-        layout: this._mapLayout,
-        graphics: {"grass.png": img, "grass-template.png": img2},
-        graphicsDictionary: ["grass.png", "grass-template.png"], 
+        layout: this._mapProps.layout,
+        graphics: imgResponse.files,
+        graphicsDictionary: imgResponse.dictionary,
         tileHeight: 100,
         tileWidth: 200,
+        tileSideHeight: 110,
         tileEdges: 10,
-        shadow: {
-          offset: 100, // Offset is the same height as the stack tile
-          verticalColor: '(5, 5, 30, 0.5)',
-          horizontalColor: '(6, 5, 50, 0.5)',
-          side: 1
-        },
-        // shadowDistance: {
-        //   distance: 5,
-        //   darkness: 1,
-        //   color: "#000"
-        // }
+        shadowSide: 1
       });
       this._tileField.align("h-center", CanvasControl().width, 5, 0);
       this._tileField.align("v-center", CanvasControl().height, 5, 0);
-      this._tileField.setZoom(0.5);
-    };
-    img.src = "img/grass.png";
-    img2.src = "img/grass-template.png";
-  };
+      this._tileField.setZoom(this._zoom);
 
-  this.addObjectDisplay = function(objectDisplay) {
-    this._objectsDisplay.push(objectDisplay);
-  };
+      this._depth = Math.max(this._mapProps.layout.length, this._mapProps.layout[0].length) * 2 - 1;
+    }
 
-  this.draw = function(objectsDisplay) {
-    if (this._tileField) {
-      this._context.clearRect(0, 0, CanvasControl().width, CanvasControl().height);
-      for (var i = 0 ; i < 10 ; i++) {
-        for (var j = 0 ; j < 10 ; j++) {
-          for (var k = 0 ; k < this._tileField.getMaxHeight() ; k++) {
-            this._tileField.draw(i, j, k);
+    addObjectDisplay(objectDisplay) {
+      this._objectsDisplay.push(objectDisplay);
+    }
+
+    resetObjectsDisplay() {
+      this._objectsDisplay = [];
+    }
+
+    draw(elementsMap) {
+      for (let deep = 0 ; deep < this._depth ; deep++) {
+        for (let line = Math.max(deep - this._mapProps.layout[0].length + 1, 0) ; line < deep + 1 && line < this._mapProps.layout.length ; line++) {
+          let x = line;
+          let z = deep - line;
+          for (let y = 0 ; y < elementsMap[x][z].length ; y++) {
+            this._tileField.draw(x, z, y);
+            for (let element in elementsMap[x][z][y]) {
+              let pos = elementsMap[x][z][y][element].getPosition();
+              this._tileField.draw(pos.x, pos.z, pos.y, elementsMap[x][z][y][element].getDisplay().img);
+            }
           }
         }
-        // this._tileField.drawHorizontalShadows(k);
       }
     }
-  };
 
-  this.destroy = function() {
-    this._trigger('destroy');
-  };
+    destroy() {
+      this._trigger('destroy');
+    }
 
-  this._init();
+  }
 
-};
+  window.Drawer = new Drawer();
+
+})();
+
