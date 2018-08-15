@@ -39,8 +39,8 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
   var shadowSide = null;
   var shadowMap = [];
 
-
-  var particleEffects = null;
+  var filters = {};
+  var filtersType = {}; // false for predefined filter (string), true for custom filter (object)
 
   var curZoom = 1;
   var mouseUsed = false;
@@ -70,6 +70,10 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
     applyInteractions = settings.applyInteractions;
     // 0: left | 1: right | 2: behind right | 3: behind left
     shadowSide = settings.shadowSide || 1;
+
+    if (settings.filters) {
+      _setFilters(settings.filters);
+    }
 
     if (settings.particleMap) {
       _particleTiles(settings.particleMap);
@@ -153,6 +157,14 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
     _updateMaxHeight();
     _updateShadowMap();
     _updateTileCache();
+  }
+
+  function _setFilters(filtersOpt) {
+    filters = filtersOpt;
+    for (var i in filters) {
+      if (typeof filters[i] == "string") filtersType[i] = false;
+      else filtersType[i] = true;
+    }
   }
 
   function _updateMaxHeight() {
@@ -279,10 +291,10 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
           if (_isPointInPolygon(shadowAreas[itA], { x: x, y: y })) shadowPixel = true;
         }
         if (shadowPixel) {
-          pxFilters.shadow(data, itD);
+          _applyFilter("shadow", data, itD, 1);
         }
         else {
-          pxFilters.sunset(data, itD);
+          _applyFilter("light", data, itD, 1);
         }
       }
       ctxCache.putImageData(imageData, 0, 0);
@@ -298,17 +310,84 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
       }
     }
   }
-  var pxFilters = {
-    shadow: function(data, i) {
-      data[i]     *= 0.6;
-      data[i + 1] *= 0.7;
-      data[i + 2] *= 1.6;
-    },
-    sunset: function(data, i) {
-      data[i]     = data[i] * 1.2 + 10;
-      data[i + 1] *= 1;
-      data[i + 2] *= 1;
+
+  function _filterImg(img, shadowMask) {
+    let filteredImg = document.createElement("canvas");
+    filteredImg.width = img.width;
+    filteredImg.height = img.height;
+    let filteredCtx = filteredImg.getContext('2d');
+    filteredCtx.drawImage(img, 0, 0, filteredImg.width, filteredImg.height);
+    let filteredData = filteredCtx.getImageData(0, 0, filteredImg.width, filteredImg.height);
+
+    if (shadowMask) {
+      let maskCanvas = document.createElement("canvas");
+      maskCanvas.width = shadowMask.width;
+      maskCanvas.height = shadowMask.height;
+      let maskCtx = maskCanvas.getContext('2d');
+      maskCtx.drawImage(shadowMask, 0, 0, filteredImg.width, filteredImg.height);
+      let maskData = maskCtx.getImageData(0, 0, filteredImg.width, filteredImg.height);
+
+      for (var itD = 0; itD < filteredData.data.length; itD += 4) {
+        if (filters.light) {
+          _applyFilter("light", filteredData.data, itD, 1 - maskData.data[itD + 3] / 255);
+        }
+        if (filters.shadow) {
+          _applyFilter("shadow", filteredData.data, itD, maskData.data[itD + 3] / 255);
+        }
+      }
     }
+    else {
+      for (var itD = 0; itD < filteredData.data.length; itD += 4) {
+        if (filters.light) _pxFilters[filters.light](filteredData.data, itD, 1);
+      }
+    }
+
+    filteredCtx.putImageData(filteredData, 0, 0);
+
+    return filteredImg;
+  }
+
+  function _applyFilter(filterName, data, i, alpha) {
+    if (filters[filterName]) {
+      if (filtersType[filterName]) _customFilter(filters[filterName], data, i, alpha);
+      else _pxFilters[filters[filterName]](data, i, alpha);
+    }
+  }
+
+  var _pxFilters = {
+    blueShadow: function(data, i, alpha) {
+      data[i]     = _computeFilter(data[i]    , 0.6, 0, alpha);
+      data[i + 1] = _computeFilter(data[i + 1], 0.7, 0, alpha);
+      data[i + 2] = _computeFilter(data[i + 2], 1.6, 0, alpha);
+    },
+    darkShadow: function(data, i, alpha) {
+      data[i]     = _computeFilter(data[i]    , 0.4, -20, alpha);
+      data[i + 1] = _computeFilter(data[i + 1], 0.6, -10, alpha);
+      data[i + 2] = _computeFilter(data[i + 2], 1, -10, alpha);
+    },
+    sunset: function(data, i, alpha) {
+      data[i]     = _computeFilter(data[i]    , 1.2, 10, alpha);
+      // data[i + 1] *= 1;
+      // data[i + 2] *= 1;
+    },
+    moonlight: function(data, i, alpha) {
+      // data[i]     = data[i]     * (1 - 0.5 * alpha) + 0 * alpha;
+      // data[i + 1] = data[i + 1] * (1 - 0.3 * alpha) + 10 * alpha;
+      // data[i + 2] = data[i + 1] * (1 - 0.1* alpha) + 10 * alpha;
+      data[i]     = _computeFilter(data[i]    , 0.6, 0, alpha);
+      data[i + 1] = _computeFilter(data[i + 1], 1, 0, alpha);
+      data[i + 2] = _computeFilter(data[i + 2], 1.6, 30, alpha);
+    }
+  };
+
+  function _customFilter(filter, data, i, alpha) {
+    data[i]     = _computeFilter(data[i]    , filter.r.factor, filter.r.offset, alpha);
+    data[i + 1] = _computeFilter(data[i + 1], filter.g.factor, filter.g.offset, alpha);
+    data[i + 2] = _computeFilter(data[i + 2], filter.b.factor, filter.b.offset, alpha);
+  }
+
+  function _computeFilter(data, factor, offset, alpha) {
+    return (data * factor + offset) * alpha + data * (1 - alpha);
   }
 
   function _getShadowAreas(i, j, k) {
@@ -570,6 +649,10 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
 
     draw: function(i, j, k, objectImg) {
       return _draw(i, j, k, objectImg);
+    },
+
+    filterImg: function(img, shadowMask) {
+      return _filterImg(img, shadowMask);
     },
 
     getLayout: function() {

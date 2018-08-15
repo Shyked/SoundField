@@ -35,7 +35,8 @@
         tileWidth: 200,
         tileSideHeight: 110,
         tileEdges: 10,
-        shadowSide: 1
+        shadowSide: 1,
+        filters: this._mapProps.filters
       });
       this._tileField.align("h-center", CanvasControl().width, 5, 0);
       this._tileField.align("v-center", CanvasControl().height, 5, 0);
@@ -53,6 +54,7 @@
     }
 
     draw(elementsMap) {
+      this._context.clearRect(0, 0, CanvasControl().width, CanvasControl().height)
       for (let deep = 0 ; deep < this._depth ; deep++) {
         for (let line = Math.max(deep - this._mapProps.layout[0].length + 1, 0) ; line < deep + 1 && line < this._mapProps.layout.length ; line++) {
           let x = line;
@@ -60,8 +62,12 @@
           for (let y = 0 ; y < elementsMap[x][z].length ; y++) {
             this._tileField.draw(x, z, y);
             for (let element in elementsMap[x][z][y]) {
-              let pos = elementsMap[x][z][y][element].getPosition();
-              this._tileField.draw(pos.x, pos.z, pos.y, elementsMap[x][z][y][element].getDisplay().img);
+              let display = elementsMap[x][z][y][element].getDisplay();
+              if (display.img) {
+                let pos = display.getPosition();
+                if (!display.filteredImg) display.filteredImg = this._tileField.filterImg(display.img, display.shadowMask);
+                this._tileField.draw(pos.x, pos.z, pos.y, display.filteredImg);
+              }
             }
           }
         }

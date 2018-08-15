@@ -1,12 +1,12 @@
 
 class Element extends EventHandler {
 
-  constructor(master, sound, skin, options) {
+  constructor(master, sound, skin, shadow, options) {
     super();
     this._x = 0;
     this._y = 0;
     this._z = 0;
-    this._display = skin ? new ObjectDisplay(skin) : null;
+    this._display = skin ? new ObjectDisplay(skin, shadow) : null;
     this._sound = sound ? new ObjectSound(master, sound) : null;
     this.options = options;
   };

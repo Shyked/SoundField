@@ -136,7 +136,36 @@ var ImgLoader = function(graphics) {
     });
   }
 
-  if (Object.prototype.toString.call(graphics) === '[object Array]') {
+  function _imgList(list) {
+    return new Promise(function(resolve, reject) {
+
+      var loaded = 0; // Images total the preloader has loaded
+      var loading = 0; // Images total the preloader needs to load
+
+      var images = [];
+      loading += list.length;
+     
+      list.map(function(imgPath) {
+        let image = new Image();
+        images.push(image);
+        let isLoaded = function() {
+          loaded++;
+          if (loaded == loading) {
+            resolve(images);
+          }
+        };
+        image.onload = isLoaded;
+        image.onerror = isLoaded;
+
+        image.src = imgPath;
+      });
+    });
+  }
+
+  if (typeof graphics[0] == "string") {
+    return _imgList(graphics);
+  }
+  else if (Object.prototype.toString.call(graphics) === '[object Array]') {
     var promises = [];
     for (var i = 0; i < graphics.length; i++) {
       promises.push(_imgPromise(graphics[i]));

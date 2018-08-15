@@ -50,7 +50,7 @@ class Stage extends EventHandler {
   };
 
   _addElement(elementJson) {
-    let element = new Element(this._master, elementJson.sound, elementJson.skin, elementJson.options);
+    let element = new Element(this._master, elementJson.sound, elementJson.skin, elementJson.shadow, elementJson.options);
     element.setPosition(elementJson.pos.x, elementJson.pos.y, elementJson.pos.z);
     this._elements.push(element);
     Drawer.addObjectDisplay(element.getDisplay());
