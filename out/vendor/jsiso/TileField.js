@@ -21,6 +21,7 @@ THE SOFTWARE. */
 var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
 
   var tileCache = [];
+  var uniqueTileCache = [];
 
   var title = "";
   var drawX = 0;
@@ -30,6 +31,8 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
   var tileWidth = 0;
   var tileSideHeight = 0;
   var tileEdges = 0;
+
+  var tilesHeightOffset = [];
 
   var maxHeight = 0;
   var lightMap = null;
@@ -70,6 +73,7 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
     applyInteractions = settings.applyInteractions;
     // 0: left | 1: right | 2: behind right | 3: behind left
     shadowSide = settings.shadowSide || 1;
+    tilesHeightOffset = settings.tilesHeightOffset || [];
 
     if (settings.filters) {
       _setFilters(settings.filters);
@@ -252,6 +256,8 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
       for (var i = 0 ; i < mapLayout.length ; i++) {
         for (var j = 0 ; j < mapLayout[i].length ; j++) {
           if (_getTile(i, j, k)) process(i, j, k);
+          if (shadowSide == 0) shadowMap[i][j][k] |= 12; // 01100
+          if (shadowSide == 1) shadowMap[i][j][k] |= 3; // 00011
         }
       }
     }
@@ -268,38 +274,46 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
     }
 
     var process = function(i, j, k) {
-      var graphicValue = _getGraphicValueAt(i, j, k);
+      let graphicValue = _getGraphicValueAt(i, j, k);
       if (graphicValue == null) return;
-      var img = tileImages[tileImagesDictionary[graphicValue]];
-      
-      var holderCache = document.createElement("canvas"); // Set new Buffer element
-      holderCache.width = img.width;
-      holderCache.height = img.height;
-      var ctxCache = holderCache.getContext('2d');
-      
-      ctxCache.drawImage(img, 0, 0, holderCache.width, holderCache.height);
 
-      var imageData = ctxCache.getImageData(0, 0, holderCache.width, holderCache.height);
-      var data = imageData.data;
+      if (!uniqueTileCache[graphicValue]) uniqueTileCache[graphicValue] = [];
+      if (!uniqueTileCache[graphicValue][shadowMap[i][j][k]]) {
 
-      var shadowAreas = _getShadowAreas(i, j, k);
-      for (var itD = 0; itD < data.length; itD += 4) {
-        var x = (itD / 4) % holderCache.width;
-        var y = ((itD / 4) - x) / holderCache.width;
-        var shadowPixel = false;
-        for (var itA in shadowAreas) {
-          if (_isPointInPolygon(shadowAreas[itA], { x: x, y: y })) shadowPixel = true;
+        var img = tileImages[tileImagesDictionary[graphicValue]];
+        
+        var holderCache = document.createElement("canvas"); // Set new Buffer element
+        holderCache.width = img.width;
+        holderCache.height = img.height;
+        var ctxCache = holderCache.getContext('2d');
+        
+        ctxCache.drawImage(img, 0, 0, holderCache.width, holderCache.height);
+
+        var imageData = ctxCache.getImageData(0, 0, holderCache.width, holderCache.height);
+        var data = imageData.data;
+
+        var shadowAreas = _getShadowAreas(i, j, k);
+        for (var itD = 0; itD < data.length; itD += 4) {
+          var x = (itD / 4) % holderCache.width;
+          var y = ((itD / 4) - x) / holderCache.width;
+          var shadowPixel = false;
+          for (var itA in shadowAreas) {
+            if (_isPointInPolygon(shadowAreas[itA], { x: x, y: y })) shadowPixel = true;
+          }
+          if (shadowPixel) {
+            _applyFilter("shadow", data, itD, 1);
+          }
+          else {
+            _applyFilter("light", data, itD, 1);
+          }
         }
-        if (shadowPixel) {
-          _applyFilter("shadow", data, itD, 1);
-        }
-        else {
-          _applyFilter("light", data, itD, 1);
-        }
+        ctxCache.putImageData(imageData, 0, 0);
+
+        uniqueTileCache[graphicValue][shadowMap[i][j][k]] = holderCache;
+
       }
-      ctxCache.putImageData(imageData, 0, 0);
 
-      tileCache[i][j][k] = holderCache;
+      tileCache[i][j][k] = uniqueTileCache[graphicValue][shadowMap[i][j][k]];
     };
 
     for (var i = 0 ; i < mapLayout.length ; i++) {
@@ -398,12 +412,19 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
     var stackGraphic = tileImages[tileImagesDictionary[graphicValue]];
     if (!stackGraphic) return null;
 
-    var resizedTileHeight = stackGraphic.height * (tileWidth / stackGraphic.width);
-    var tileSideHeight = (resizedTileHeight - tileHeight);
+    // var resizedTileHeight = stackGraphic.height * (tileWidth / stackGraphic.width);
+    console.log(tileSideHeight);
+    // debugger;
+    // var tileSideHeight = (resizedTileHeight - tileHeight);
+    // if (tilesHeightOffset[graphicValue][0] != 0) debugger;
+    let tempTileSideHeight = tileSideHeight - tilesHeightOffset[graphicValue][0] + tilesHeightOffset[graphicValue][1];
     var xpos = tileEdges;
-    var ypos = tileEdges;
+    var ypos = tileEdges + tilesHeightOffset[graphicValue][0];
+    // var tileSideHeight = tileSideHeight * curZoom;// - tilesHeightOffset[graphicValue][0] + tilesHeightOffset[graphicValue][1];
+    // var xpos = tileEdges;
+    // var ypos = tileEdges;// + tilesHeightOffset[graphicValue][0];
     var shadowFlags = _getShadowFlags(i, j, k);
-    var corners = _getCubeCorners(xpos, ypos, tileSideHeight);
+    var corners = _getCubeCorners(xpos, ypos, tempTileSideHeight);
 
     var areas = [];
 

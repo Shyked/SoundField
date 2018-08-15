@@ -30,7 +30,13 @@
         json.listener.skin = DEFAULT_SKIN_PATH + json.listener.skin + ".png";
       if (!json.filters)
         json.filters = {};
-      return new MapProps(json.layout, json.tiles, json.tilesCollisions, json.elements, json.listener, json.filters);
+      if (!json.tilesOffsetHeight) {
+        json.tilesOffsetHeight = [];
+        for (var i in json.tiles) {
+          json.tilesOffsetHeight.push([0, 0]);
+        }
+      }
+      return new MapProps(json.layout, json.tiles, json.tilesHeightOffset, json.tilesCollisions, json.elements, json.listener, json.filters);
     };
 
     destroy() {
@@ -41,9 +47,10 @@
 
   class MapProps {
 
-    constructor(layout, tiles, tilesCollisions, elements, listener, filters) {
+    constructor(layout, tiles, tilesHeightOffset, tilesCollisions, elements, listener, filters) {
       this.layout = layout;
       this.tiles = tiles;
+      this.tilesHeightOffset = tilesHeightOffset;
       this.tilesCollisions = tilesCollisions;
       this.elements = elements;
       this.listener = listener;

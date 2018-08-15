@@ -35,6 +35,7 @@
         tileWidth: 200,
         tileSideHeight: 110,
         tileEdges: 10,
+        tilesHeightOffset: this._mapProps.tilesHeightOffset,
         shadowSide: 1,
         filters: this._mapProps.filters
       });

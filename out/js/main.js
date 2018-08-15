@@ -7,7 +7,7 @@
 
     window.AUDIO_CONTEXT = new (window.AudioContext || window.webkitAudioContext)();
     
-    window.stage = new Stage("sample");
+    window.stage = new Stage("sample2");
 
 
     // stage.play();
