@@ -66,7 +66,7 @@ var CanvasControl = (function() {
       for (var s in style) {
         canvasElement.style[s] = style[s];
       }
-      console.log(usePixelRatio);
+      // console.log(usePixelRatio);
       canvasType = '2d';
       canvasElement.style.width = w + "px";
       canvasElement.style.height = h + "px";

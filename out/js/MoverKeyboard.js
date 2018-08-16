@@ -1,14 +1,15 @@
 
 class MoverKeyboard extends Mover {
 
-  constructor(pos) {
+  constructor(listenerProps) {
     super();
 
     this._pos = {
-      x: pos.x,
-      y: pos.y,
-      z: pos.z
+      x: listenerProps.pos.x,
+      y: listenerProps.pos.y,
+      z: listenerProps.pos.z
     };
+    this._radius = listenerProps.size / 2;
 
     this._vel = {
       x: 0,
@@ -21,6 +22,8 @@ class MoverKeyboard extends Mover {
       right: false,
       down: false
     };
+
+    this._speed = 0.03;
 
     this._looping = false;
 
@@ -70,15 +73,74 @@ class MoverKeyboard extends Mover {
     this._vel.z = (e.touches[0].pageY - this._pos.z) / 10;
   };
 
-  _loop() {
-    this._vel.x = (this._vel.x + (this._keys.right ? 1 : 0) - (this._keys.left ? 1 : 0)) / 1.2;
-    this._vel.z = (this._vel.z + (this._keys.down ? 1 : 0) - (this._keys.up ? 1 : 0)) / 1.2;
+  _checkBounds() {
+    if (this._pos.x < 0) this._pos.x = 0;
+    if (this._pos.x > this._collisionMap.length - 1) this._pos.x = this._collisionMap.length - 1;
+    if (this._pos.z < 0) this._pos.z = 0;
+    if (this._pos.z > this._collisionMap[0].length - 1) this._pos.z = this._collisionMap[0].length - 1;
+  }
 
-    if (Math.abs(this._vel.x) > 0.5 || Math.abs(this._vel.z) > 0.5) {
-      this._pos.x += this._vel.x;
-      this._pos.z += this._vel.z;
+  _moveWithCollision() {
+    let roundX = Math.round(this._pos.x);
+    let roundY = Math.round(this._pos.y);
+    let roundZ = Math.round(this._pos.z);
+
+    let orientationX = Math.sign(this._vel.x);
+    let orientationZ = Math.sign(this._vel.z);
+    let newX = this._pos.x + this._vel.x;
+    let newZ = this._pos.z + this._vel.z;
+
+    let changingX = () => { return orientationX * newX >= orientationX * roundX + (0.5 - this._radius) };
+    let changingZ = () => { return orientationZ * newZ >= orientationZ * roundZ + (0.5 - this._radius) };
+
+    let collideX = (bounce) => {
+      newX = roundX + (0.49 - this._radius) * orientationX;
+      if (bounce) this._vel.x = -this._vel.x / 1.5;
+    };
+    let collideZ = (bounce) => {
+      newZ = roundZ + (0.49 - this._radius) * orientationZ;
+      if (bounce) this._vel.z = -this._vel.z / 1.5;
+    };
+
+    if (changingX()) {
+      if (this._collisionMap[roundX + orientationX][roundZ][roundY] & 2) collideX(true);
+      else if (this._pos.y >= 1 && (this._collisionMap[roundX + orientationX][roundZ][roundY - 1] & 1) == 0) collideX();
+    }
+
+    if (changingZ()) {
+      if (this._collisionMap[roundX][roundZ + orientationZ][roundY] & 2) collideZ(true);
+      else if (this._pos.y >= 1 && (this._collisionMap[roundX][roundZ + orientationZ][roundY - 1] & 1) == 0) collideZ();
+    }
+
+    if (changingX() && changingZ()) {
+      if (this._collisionMap[roundX + orientationX][roundZ + orientationZ][roundY] & 2) collideX(true), collideZ(true);
+      else if (this._pos.y >= 1 && (this._collisionMap[roundX + orientationX][roundZ + orientationZ][roundY - 1] & 1) == 0) collideX(), collideZ();
+    }
+
+    this._pos.x = newX;
+    this._pos.z = newZ;
+  }
+
+  _loop() {
+    let tempVel = window.utils.toAngleDist({
+      x: (this._keys.right ? this._speed : 0) - (this._keys.left ? this._speed : 0),
+      y: (this._keys.down ? this._speed : 0) - (this._keys.up ? this._speed : 0)
+    });
+    if (tempVel.dist > this._speed) tempVel.dist = this._speed;
+    tempVel.angle -= Math.PI / 4;
+    tempVel = window.utils.toXY(tempVel);
+
+    this._vel.x = (this._vel.x + tempVel.x) / 1.2;
+    this._vel.z = (this._vel.z + tempVel.y) / 1.2;
+
+    if (Math.abs(this._vel.x) + Math.abs(this._vel.z) > 0.001) {
+      this._moveWithCollision();
+      // this._pos.x += this._vel.x;
+      // this._pos.z += this._vel.z;
+      this._checkBounds();
       this._trigger('move',
         this._pos.x,
+        this._pos.y,
         this._pos.z,
         window.utils.toAngleDist({ x: this._vel.x, y: this._vel.z }).angle);
       requestAnimationFrame(() => {
@@ -98,6 +160,7 @@ class MoverKeyboard extends Mover {
 
   reset(pos) {
     this._pos.x = pos.x;
+    this._pos.y = pos.y;
     this._pos.z = pos.z;
     this._vel = { x: 0, z: 0 };
   };

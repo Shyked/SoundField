@@ -412,17 +412,9 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
     var stackGraphic = tileImages[tileImagesDictionary[graphicValue]];
     if (!stackGraphic) return null;
 
-    // var resizedTileHeight = stackGraphic.height * (tileWidth / stackGraphic.width);
-    console.log(tileSideHeight);
-    // debugger;
-    // var tileSideHeight = (resizedTileHeight - tileHeight);
-    // if (tilesHeightOffset[graphicValue][0] != 0) debugger;
     let tempTileSideHeight = tileSideHeight - tilesHeightOffset[graphicValue][0] + tilesHeightOffset[graphicValue][1];
     var xpos = tileEdges;
     var ypos = tileEdges + tilesHeightOffset[graphicValue][0];
-    // var tileSideHeight = tileSideHeight * curZoom;// - tilesHeightOffset[graphicValue][0] + tilesHeightOffset[graphicValue][1];
-    // var xpos = tileEdges;
-    // var ypos = tileEdges;// + tilesHeightOffset[graphicValue][0];
     var shadowFlags = _getShadowFlags(i, j, k);
     var corners = _getCubeCorners(xpos, ypos, tempTileSideHeight);
 
@@ -546,7 +538,7 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
       case 7:
         return { x: xpos + (tileWidth / 2 * curZoom), y: ypos + ((te + tileHeight + tileSideHeight) * curZoom) };
       default:
-        throw "Unknown cube corner";
+        throw "Unknown cube corner: " + corner;
     }
 
   }

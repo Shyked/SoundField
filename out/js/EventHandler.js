@@ -1,26 +1,26 @@
 /*
     Vanilla
 */
-window.EventHandler = function () {
+class EventHandler {
 
-    this._events = [];
-    this._extEvents = {};
-    this._mutationObservers = [];
 
-    this._init = function () {
+    constructor() {
+        this._events = [];
+        this._extEvents = {};
+        this._mutationObservers = [];
+
         this._initEvents();
     };
 
-    this._initEvents = function () {
-        var that = this;
-        this.on('destroy', function () {
+    _initEvents() {
+        this.on('destroy', () => {
             this._unregisterEvents();
         });
     };
 
     /* EXTERNAL */
 
-    this._registerEvent = function (els, event, handler, selector) {
+    _registerEvent(els, event, handler, selector) {
         var that = this;
         if (!Array.isArray(els))
             els = [els];
@@ -39,7 +39,7 @@ window.EventHandler = function () {
         }
     };
 
-    this._unregisterEvents = function () {
+    _unregisterEvents() {
         for (var i in this._events) {
             var ev = this._events[i];
             ev.el.removeEventListener(ev.event, ev.handler);
@@ -51,7 +51,7 @@ window.EventHandler = function () {
         this._mutationObservers = [];
     };
 
-    this._onRemove = function (el, handler) {
+    _onRemove(el, handler) {
         if (MutationObserver) {
             var parent = el.parentElement;
             if (!parent) {
@@ -77,7 +77,7 @@ window.EventHandler = function () {
         else console.error('MutationObserver not supported.');
     };
 
-    this._onNewChild = function (el, handler) {
+    _onNewChild(el, handler) {
         if (MutationObserver) {
             var observer = new MutationObserver(function (mutationsList) {
                 for (var idM in mutationsList) {
@@ -96,7 +96,7 @@ window.EventHandler = function () {
 
     /* INTERNAL */
 
-    this._trigger = function (ev) {
+    _trigger(ev) {
         var deleteListeners = [];
         for (var i in this._extEvents[ev]) {
             this._extEvents[ev][i].handler.apply(this, Array.prototype.slice.call(arguments, 1));
@@ -115,7 +115,7 @@ window.EventHandler = function () {
         }
     };
 
-    this.on = function (ev, handler, times) {
+    on(ev, handler, times) {
         if (!this._extEvents[ev]) this._extEvents[ev] = [];
         this._extEvents[ev].push({
             handler: handler,
@@ -123,11 +123,9 @@ window.EventHandler = function () {
         });
     };
 
-    this.once = function (ev, handler) {
+    once(ev, handler) {
         this.on(ev, handler, 1);
     };
-
-    this._init();
 
 };
 

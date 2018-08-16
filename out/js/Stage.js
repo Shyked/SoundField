@@ -14,22 +14,23 @@ class Stage extends EventHandler {
     this._drawing = true;
     this._frameInterval = 0;
 
-    this.setFps(1);
+    this.setFps(30);
 
     this._loadMap(mapName);
+
+    this._initEvents();
   }
 
   _initEvents() {
-    this._mover.on('move', (x, y, z, angle) => {
-      that._updateListenerPosition(x, y, z, angle);
-    })
   };
 
   async _loadMap(mapName) {
     this._mapProps = await MapLoader.load(mapName);
     Drawer.setMap(this._mapProps);
-    this._mover = new MoverKeyboard(this._mapProps.listener.pos);
-    this._initEvents();
+    this._mover = new MoverKeyboard(this._mapProps.listener);
+    this._mover.on('move', (x, y, z, angle) => {
+      this._updateListenerPosition(x, y, z, angle);
+    });
     this.buildRealTime();
     this._draw();
   }
@@ -37,7 +38,7 @@ class Stage extends EventHandler {
   _initListener() {
     this._listener = new Listener(this._master.context, this._mapProps.listener.skin);
     this._listener.setPosition(this._mapProps.listener.pos.x, this._mapProps.listener.pos.y, this._mapProps.listener.pos.z);
-    Drawer.addObjectDisplay(this._listener.getDisplay());
+    this._preCalculatedMap.addDynamicDisplay(this._listener.getDisplay());
   };
 
   _build() {
@@ -45,6 +46,7 @@ class Stage extends EventHandler {
       this._addElement(this._mapProps.elements[i]);
     }
     this._preCalculatedMap = new PreCalculatedMap(this._mapProps.layout, this._mapProps.tilesCollisions, this._elements);
+    this._mover.attachCollisionMap(this._preCalculatedMap.tilesCollisionMap);
     this._mover.reset(this._mapProps.listener.pos);
     this._initListener();
   };
@@ -53,7 +55,6 @@ class Stage extends EventHandler {
     let element = new Element(this._master, elementJson.sound, elementJson.skin, elementJson.shadow, elementJson.options);
     element.setPosition(elementJson.pos.x, elementJson.pos.y, elementJson.pos.z);
     this._elements.push(element);
-    Drawer.addObjectDisplay(element.getDisplay());
   };
 
   _purge() {
@@ -65,12 +66,12 @@ class Stage extends EventHandler {
       this._listener.destroy();
       this._listener = null;
     }
-    Drawer.resetObjectsDisplay();
   };
 
   _updateListenerPosition(x, y, z, angle) {
     this._listener.setPosition(x, y, z);
     this._listener.setOrientation(angle);
+    this._preCalculatedMap.updateDynamicDisplay(this._listener.getDisplay());
     this._updateDistanceFromListener(x, y, z);
   };
 
@@ -89,7 +90,7 @@ class Stage extends EventHandler {
   };
 
   _draw() {
-    Drawer.draw(this._preCalculatedMap.elementsMap);
+    Drawer.draw(this._preCalculatedMap.elementsMap, this._preCalculatedMap.dynamicDisplays);
     if (this._drawing) {
       var that = this;
       if (this._frameInterval < 17) {

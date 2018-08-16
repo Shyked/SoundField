@@ -3,6 +3,7 @@ class ObjectDisplay extends EventHandler {
 
   constructor(skin, shadow) {
     super();
+    this._id = window.utils.generateUniqueId();
     this._x = 0;
     this._y = 0;
     this._z = 0;
@@ -14,6 +15,10 @@ class ObjectDisplay extends EventHandler {
     this.filteredImg = null;
     this._loadSkin();
   };
+
+  get id() {
+    return this._id;
+  }
 
   async _loadSkin() {
     let imgToLoad = [this._skin];

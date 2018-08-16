@@ -10,7 +10,7 @@ class ObjectSound extends EventHandler {
   constructor(master, url) {
     super();
 
-    this._id = window.utils.generateUniqueId();;
+    this._id = window.utils.generateUniqueId();
     this._url = url;
     this._master = master;
     this._x = 0;
@@ -55,8 +55,7 @@ class ObjectSound extends EventHandler {
       .connect(this._panner);
 
     this._panner
-      .connect(this._globalGain)
-      .connect(this._master);
+      .connect(this._globalGain);
   };
 
   _disconnect() {
@@ -110,11 +109,13 @@ class ObjectSound extends EventHandler {
   };
 
   play() {
+    this._globalGain.connect(this._master);
     this._audioElement.play();
   };
 
   pause() {
     this._audioElement.pause();
+    this._globalGain.disconnect();
   }
 
   stop() {
