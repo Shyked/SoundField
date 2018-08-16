@@ -96,34 +96,10 @@
       }
     }
 
-    drawBackup(elementsMap, dynamicDisplays) {
-      this._context.clearRect(0, 0, CanvasControl().width, CanvasControl().height)
-      for (let deep = 0 ; deep < this._depth ; deep++) {
-        for (let line = Math.max(deep - this._mapProps.layout[0].length + 1, 0) ; line < deep + 1 && line < this._mapProps.layout.length ; line++) {
-          let x = line;
-          let z = deep - line;
-          let maxY = Math.max(this._mapProps.layout[x][z].length,
-                              elementsMap[x][z].length,
-                              dynamicDisplays[x][z].length);
-          for (let y = 0 ; y < maxY ; y++) {
-            this._tileField.draw(x, z, y);
-            for (let element in elementsMap[x][z][y]) {
-              let display = elementsMap[x][z][y][element].getDisplay();
-              if (display.img) {
-                let pos = display.getPosition();
-                if (!display.filteredImg) display.filteredImg = this._tileField.filterImg(display.img, display.shadowMask);
-                this._tileField.draw(pos.x, pos.z, pos.y, display.filteredImg);
-              }
-            }
-            if (dynamicDisplays[x][z][y]) {
-              for (let displayInd in dynamicDisplays[x][z][y]) {
-                let display = dynamicDisplays[x][z][y][displayInd];
-                let pos = display.getPosition();
-                this._tileField.draw(pos.x, pos.z, pos.y, display.img);
-              }
-            }
-          }
-        }
+    moveCamera(x, y, z) {
+      if (this._tileField) {
+        let coords = this._tileField.getPixelCoords(x, z, y);
+        this._tileField.setOffset(-coords.x + CanvasControl().width / 2, -coords.y + CanvasControl().height / 2);
       }
     }
 

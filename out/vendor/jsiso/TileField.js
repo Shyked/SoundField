@@ -619,6 +619,13 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
     return({x: positionX, y: positionY});
   }
 
+  function _getPixelCoords(i, j, k) {
+    return {
+      x: ((i - j) * (tileWidth / 2) + tileWidth / 2) * curZoom,
+      y: ((i + j) * (tileHeight / 2) + (k - 1) * (-tileSideHeight) + tileHeight) * curZoom
+    };
+  }
+
   // function _setTile(x, y, val) {
   //   if (!mapLayout[x]) {
   //     mapLayout[x] = [];
@@ -734,6 +741,10 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
 
     getTilePos: function(x, y) {
       return _getTilePos(x, y);
+    },
+
+    getPixelCoords: function(i, j, k) {
+      return _getPixelCoords(i, j, k);
     },
 
     getOffset: function() {

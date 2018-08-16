@@ -129,31 +129,32 @@ class MoverKeyboard extends Mover {
   }
 
   _loop() {
-    let tempVel = window.utils.toAngleDist({
-      x: (this._keys.right ? this._speed : 0) - (this._keys.left ? this._speed : 0),
-      y: (this._keys.down ? this._speed : 0) - (this._keys.up ? this._speed : 0)
-    });
-    if (tempVel.dist > this._speed) tempVel.dist = this._speed;
-    tempVel.angle -= Math.PI / 4;
-    tempVel = window.utils.toXY(tempVel);
-
-    this._vel.x = (this._vel.x + tempVel.x) / 1.2;
-    this._vel.z = (this._vel.z + tempVel.y) / 1.2;
-
-    if (Math.abs(this._vel.x) + Math.abs(this._vel.z) > 0.001) {
-      this._moveWithCollision();
-      this._checkBounds();
-      this._trigger('move',
-        this._pos.x,
-        this._pos.y,
-        this._pos.z,
-        window.utils.toAngleDist({ x: this._vel.x, y: this._vel.z }).angle);
-      requestAnimationFrame(() => {
-        this._loop();
+    if (this._looping) {
+      let tempVel = window.utils.toAngleDist({
+        x: (this._keys.right ? this._speed : 0) - (this._keys.left ? this._speed : 0),
+        y: (this._keys.down ? this._speed : 0) - (this._keys.up ? this._speed : 0)
       });
-    }
-    else this._looping = false;
+      if (tempVel.dist > this._speed) tempVel.dist = this._speed;
+      tempVel.angle -= Math.PI / 4;
+      tempVel = window.utils.toXY(tempVel);
 
+      this._vel.x = (this._vel.x + tempVel.x) / 1.2;
+      this._vel.z = (this._vel.z + tempVel.y) / 1.2;
+
+      if (Math.abs(this._vel.x) + Math.abs(this._vel.z) > 0.001) {
+        this._moveWithCollision();
+        this._checkBounds();
+        this._trigger('move',
+          this._pos.x,
+          this._pos.y,
+          this._pos.z,
+          window.utils.toAngleDist({ x: this._vel.x, y: this._vel.z }).angle);
+        requestAnimationFrame(() => {
+          this._loop();
+        });
+      }
+      else this._looping = false;
+    }
   };
 
   _startLoop() {
@@ -172,6 +173,7 @@ class MoverKeyboard extends Mover {
 
   destroy() {
     this._trigger('destroy');
+    this._looping = false;
   };
 
 };

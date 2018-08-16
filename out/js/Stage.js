@@ -10,11 +10,12 @@ class Stage extends EventHandler {
     this._elements = [];
     this._master = null;
     this._mover = null;
+    this._camera = null;
     this._listener = null;
     this._drawing = true;
     this._frameInterval = 0;
 
-    this.setFps(30);
+    this.setFps(60);
 
     this._loadMap(mapName);
 
@@ -30,6 +31,10 @@ class Stage extends EventHandler {
     this._mover = new MoverKeyboard(this._mapProps.listener);
     this._mover.on('move', (x, y, z, angle) => {
       this._updateListenerPosition(x, y, z, angle);
+    });
+    this._camera = new Camera();
+    this._camera.on('move', (x, y, z) => {
+      Drawer.moveCamera(x, y, z);
     });
     this.buildRealTime();
     this._draw();
@@ -49,6 +54,7 @@ class Stage extends EventHandler {
     this._mover.attachCollisionMap(this._preCalculatedMap.tilesCollisionMap);
     this._mover.reset(this._mapProps.listener.pos);
     this._initListener();
+    this._camera.follow(this._listener.getDisplay());
   };
 
   _addElement(elementJson) {
@@ -58,6 +64,7 @@ class Stage extends EventHandler {
   };
 
   _purge() {
+    this._camera.release();
     for (let i in this._elements) {
       this._elements[i].destroy();
     }
