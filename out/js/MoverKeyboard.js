@@ -113,8 +113,15 @@ class MoverKeyboard extends Mover {
     }
 
     if (changingX() && changingZ()) {
-      if (this._collisionMap[roundX + orientationX][roundZ + orientationZ][roundY] & 2) collideX(true), collideZ(true);
-      else if (this._pos.y >= 1 && (this._collisionMap[roundX + orientationX][roundZ + orientationZ][roundY - 1] & 1) == 0) collideX(), collideZ();
+      if (this._collisionMap[roundX + orientationX][roundZ + orientationZ][roundY] & 2) {
+        // In angle, only collide with one direction (take the element to the nearest place)
+        if (newX - roundX > newZ - roundZ) collideX(true);
+        else collideZ(true);
+      }
+      else if (this._pos.y >= 1 && (this._collisionMap[roundX + orientationX][roundZ + orientationZ][roundY - 1] & 1) == 0) {
+        if (newX - roundX > newZ - roundZ) collideX();
+        else collideZ();
+      }
     }
 
     this._pos.x = newX;
@@ -135,8 +142,6 @@ class MoverKeyboard extends Mover {
 
     if (Math.abs(this._vel.x) + Math.abs(this._vel.z) > 0.001) {
       this._moveWithCollision();
-      // this._pos.x += this._vel.x;
-      // this._pos.z += this._vel.z;
       this._checkBounds();
       this._trigger('move',
         this._pos.x,

@@ -63,9 +63,9 @@
     draw(elementsMap, dynamicDisplays) {
       this._context.clearRect(0, 0, CanvasControl().width, CanvasControl().height)
       let maxY = this._getMaxY(elementsMap, dynamicDisplays);
-      for (let y = 0 ; y < maxY ; y++) {
-        for (let deep = 0 ; deep < this._depth ; deep++) {
-          for (let line = Math.max(deep - this._mapProps.layout[0].length + 1, 0) ; line < deep + 1 && line < this._mapProps.layout.length ; line++) {
+      for (let deep = 0 ; deep < this._depth ; deep++) {
+        for (let line = Math.max(deep - this._mapProps.layout[0].length + 1, 0) ; line < deep + 1 && line < this._mapProps.layout.length ; line++) {
+          for (let y = 0 ; y < maxY ; y++) {
             let x = line;
             let z = deep - line;
 
@@ -81,8 +81,11 @@
             if (dynamicDisplays[x][z][y]) {
               for (let displayInd in dynamicDisplays[x][z][y]) {
                 let display = dynamicDisplays[x][z][y][displayInd];
-                let pos = display.getPosition();
-                this._tileField.draw(pos.x, pos.z, pos.y, display.img);
+                if (display.img) {
+                  let pos = display.getPosition();
+                  if (!display.filteredImg) display.filteredImg = this._tileField.filterImg(display.img, display.shadowMask);
+                  this._tileField.draw(pos.x, pos.z, pos.y, display.filteredImg);
+                }
               }
             }
 

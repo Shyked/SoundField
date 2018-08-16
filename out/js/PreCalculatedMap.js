@@ -61,9 +61,9 @@ class PreCalculatedMap {
     let pos = display.getPosition();
     if (pos.x > 17) debugger;
     // pos.x = Math.min(Math.round(pos.x) + 1, this.dynamicDisplays.length - 1);
-    pos.x = Math.round(pos.x);
+    pos.x = Math.round(pos.x + 0.1);
     pos.y = Math.round(pos.y);
-    pos.z = Math.round(pos.z);
+    pos.z = Math.round(pos.z + 0.1);
     this._fill3DArray(this.dynamicDisplays, pos);
 
     this.dynamicDisplays[pos.x][pos.z][pos.y].push(display);

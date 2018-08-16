@@ -352,7 +352,7 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
     }
     else {
       for (var itD = 0; itD < filteredData.data.length; itD += 4) {
-        if (filters.light) _pxFilters[filters.light](filteredData.data, itD, 1);
+        _applyFilter("light", filteredData.data, itD, 1);
       }
     }
 
