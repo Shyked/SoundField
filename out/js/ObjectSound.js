@@ -7,7 +7,7 @@
 */
 class ObjectSound extends EventHandler {
 
-  constructor(master, url) {
+  constructor(master, url, scope) {
     super();
 
     this._id = window.utils.generateUniqueId();
@@ -17,6 +17,7 @@ class ObjectSound extends EventHandler {
     this._y = 0;
     this._z = 0;
     this._distance = 0;
+    this._scope = scope || 15;
     this._audioElement = null;
     this._audioSource = null;
     this._offline = !!this._master.context.length;
@@ -25,7 +26,7 @@ class ObjectSound extends EventHandler {
 
     this._panner = this._createPanner();
     this._convolver = this._createReverb();
-    this._globalGain = this._createGain();
+    this._dryGain = this._createGain();
     this._convolverGain = this._createGain();
 
     this._connect();
@@ -47,15 +48,13 @@ class ObjectSound extends EventHandler {
 
   _connect() {
     this._audioSource
+      .connect(this._dryGain)
       .connect(this._panner);
 
     this._audioSource
       .connect(this._convolver)
       .connect(this._convolverGain)
       .connect(this._panner);
-
-    this._panner
-      .connect(this._globalGain);
   };
 
   _disconnect() {
@@ -63,15 +62,15 @@ class ObjectSound extends EventHandler {
     this._convolver.disconnect();
     this._convolverGain.disconnect();
     this._panner.disconnect();
-    this._globalGain.disconnect();
+    this._dryGain.disconnect();
   };
 
   _createPanner() {
     var panner = this._master.context.createPanner();
     panner.panningModel = 'HRTF';
     panner.distanceModel = 'inverse';
-    panner.refDistance = 100;
-    panner.maxDistance = 10000;
+    panner.refDistance = 1;
+    panner.maxDistance = this._scope;
     panner.rolloffFactor = 1;
     panner.coneInnerAngle = 360;
     panner.coneOuterAngle = 0;
@@ -81,7 +80,10 @@ class ObjectSound extends EventHandler {
 
   _createReverb() {
     var convolver = this._master.context.createConvolver();
-    convolver.buffer = ObjectSound.impulseResponse(this._master.context, 3, 20, false);
+    convolver.buffer = ObjectSound.impulseResponse(this._master.context, 3, 30);
+    // ObjectSound.predefinedImpulse("koli_summer_site4_stereo_bformat").then((buffer) => {
+    //   convolver.buffer = buffer;
+    // });
     return convolver;
   };
 
@@ -93,14 +95,19 @@ class ObjectSound extends EventHandler {
 
   _updateGains() {
     var updateGains = () => {
-      this._globalGain.gain.setValueAtTime(1 / (1 + this._distance * this._distance / 10000), this._master.context.currentTime);
-      this._convolverGain.gain.setValueAtTime(Math.min(this._distance, 500) / 100, this._master.context.currentTime);
+      let globalGain = (Math.sin(-Math.min(1, (this._distance / this._scope * 2 - 1)) * Math.PI / 2) + 1) / 2;
+      // let convolverGain = -globalGain + 1;
+      let convolverGain = -globalGain * 1.5 + 1.5;
+      let dryGain = globalGain;
+      this._dryGain.gain.setValueAtTime(dryGain * globalGain, this._master.context.currentTime);
+      this._convolverGain.gain.setValueAtTime(convolverGain * globalGain, this._master.context.currentTime);
+      console.log(convolverGain + " " + globalGain);
     };
     if (this._offline) updateGains();
     else {
       window.utils.cooldown(function() {
         updateGains();
-      }, "reverb" + this._id, 200);
+      }, "reverb" + this._id, 100);
     }
   };
 
@@ -109,13 +116,13 @@ class ObjectSound extends EventHandler {
   };
 
   play() {
-    this._globalGain.connect(this._master);
+    this._panner.connect(this._master);
     this._audioElement.play();
   };
 
   pause() {
     this._audioElement.pause();
-    this._globalGain.disconnect();
+    this._panner.disconnect();
   }
 
   stop() {
@@ -144,7 +151,7 @@ class ObjectSound extends EventHandler {
 };
 
 
-ObjectSound.impulseResponse = function(audioContext, duration, decay, reverse) {
+ObjectSound.impulseResponse = function(audioContext, duration, decay) {
     var sampleRate = audioContext.sampleRate;
     var length = sampleRate * duration;
     var impulse = audioContext.createBuffer(2, length, sampleRate);
@@ -154,11 +161,56 @@ ObjectSound.impulseResponse = function(audioContext, duration, decay, reverse) {
     if (!decay)
         decay = 2.0;
     for (var i = 0; i < length; i++) {
-      var n = reverse ? length - i : i;
-      impulseL[i] = (Math.random() * 2 - 1) * Math.pow(1 - n / length, decay);
-      impulseR[i] = (Math.random() * 2 - 1) * Math.pow(1 - n / length, decay);
+      impulseL[i + 3000] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+      impulseR[i + 3000] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
     }
     return impulse;
+};
+
+ObjectSound.predefinedImpulses = {};
+ObjectSound.waitingForImpulse = {};
+
+ObjectSound.predefinedImpulse = function(name) {
+  let firstLoad = false;
+  if (!ObjectSound.predefinedImpulses[name]) {
+    if (ObjectSound.predefinedImpulses[name] !== null)
+      firstLoad = true;
+    ObjectSound.predefinedImpulses[name] = null;  
+  }
+
+  if (!ObjectSound.predefinedImpulses[name])
+    ObjectSound.predefinedImpulses[name] = null;
+
+  return new Promise((resolve, reject) => {
+    if (ObjectSound.predefinedImpulses[name]) resolve(ObjectSound.predefinedImpulses[name]);
+    else if (!firstLoad) {
+      if (!ObjectSound.waitingForImpulse[name]) ObjectSound.waitingForImpulse[name] = [];
+      ObjectSound.waitingForImpulse[name].push(resolve);
+    }
+    else {
+      let xhr = new XMLHttpRequest();
+      xhr.onload  = function() {
+        let audioData = xhr.response;
+
+        AUDIO_CONTEXT.decodeAudioData(audioData,
+          function(buffer) {
+            resolve(buffer);
+            ObjectSound.predefinedImpulses[name] = buffer;
+            for (let i in ObjectSound.waitingForImpulse[name]) {
+              ObjectSound.waitingForImpulse[name][i](buffer);
+            }
+            ObjectSound.waitingForImpulse = [];
+          },
+          function(e) {
+            console.log("Error with decoding audio data" + e.err);
+          }
+        );
+      };
+      xhr.responseType = 'arraybuffer'
+      xhr.open("GET", "resources/audio/impulses/" + name + ".ogg", true);
+      xhr.send();
+    }
+  });
 };
 
 // Override to return destination on Safari

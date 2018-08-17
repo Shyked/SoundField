@@ -23,7 +23,7 @@ class MoverKeyboard extends Mover {
       down: false
     };
 
-    this._speed = 0.03;
+    this._speed = 0.02;
 
     this._looping = false;
 

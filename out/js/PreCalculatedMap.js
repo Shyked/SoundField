@@ -60,7 +60,7 @@ class PreCalculatedMap {
   addDynamicDisplay(display) {
     let pos = display.getPosition();
     if (pos.x > 17) debugger;
-    // pos.x = Math.min(Math.round(pos.x) + 1, this.dynamicDisplays.length - 1);
+    // The + 0.1 puts the display a bit ahead so it does not pass behind floor on a nearest column
     pos.x = Math.round(pos.x + 0.1);
     pos.y = Math.round(pos.y);
     pos.z = Math.round(pos.z + 0.1);

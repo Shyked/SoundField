@@ -51,7 +51,7 @@ class Camera extends EventHandler {
       this._pos.y += delta.y;
       this._pos.z += delta.z;
 
-      this._trigger('move', this._pos.x, this._pos.y, this._pos.z);
+      this._trigger('move', this._pos.x, this._pos.y + 1, this._pos.z);
 
       requestAnimationFrame(() => { this._loop(); });
     }

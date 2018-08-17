@@ -55,6 +55,7 @@ class Stage extends EventHandler {
     this._mover.reset(this._mapProps.listener.pos);
     this._initListener();
     this._camera.follow(this._listener.getDisplay());
+    this._trigger('built');
   };
 
   _addElement(elementJson) {
@@ -132,8 +133,10 @@ class Stage extends EventHandler {
   };
 
   play() {
+    let listenerPos = this._listener.getDisplay().getPosition();
     for (let i in this._elements) {
       this._elements[i].play();
+      this._elements[i].updateDistanceFromListener(listenerPos.x, listenerPos.y, listenerPos.z);
     }
   };
 

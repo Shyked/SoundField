@@ -46,12 +46,12 @@ class Element extends EventHandler {
   };
 
   updateDistanceFromListener(x, y, z) {
-    this._sound.updateDistanceFromListener(x, y, z);
+    if (this._sound) this._sound.updateDistanceFromListener(x, y, z);
   };
 
   destroy() {
     this._trigger('destroy');
-    this._sound.destroy();
+    if (this._sound) this._sound.destroy();
   };
 
 };

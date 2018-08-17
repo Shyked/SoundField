@@ -9,8 +9,9 @@
     
     window.stage = new Stage("sample2");
 
-
-    // stage.play();
+    stage.on('built', function() {
+      stage.play();
+    });
 
   };
 

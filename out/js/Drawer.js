@@ -8,7 +8,7 @@
 
       this._context = null;
       this._tileField = null;
-      this._zoom = 0.5;
+      this._zoom = 0.8;
 
       this._depth = 0;
 
@@ -17,6 +17,18 @@
         marginLeft: "auto",
         marginRight: "auto"
       });
+
+      this._initEvents();
+    }
+
+    _initEvents() {
+      this._registerEvent(
+        window, 'resize',
+        this._onresize);
+    }
+
+    _onresize() {
+      CanvasControl.update(window.innerWidth, window.innerHeight);
     }
 
     async setMap(mapProps) {
@@ -61,6 +73,7 @@
     }
 
     draw(elementsMap, dynamicDisplays) {
+                  //this._context.globalCompositeOperation = 'source-over';
       this._context.clearRect(0, 0, CanvasControl().width, CanvasControl().height)
       let maxY = this._getMaxY(elementsMap, dynamicDisplays);
       for (let deep = 0 ; deep < this._depth ; deep++) {
@@ -85,6 +98,7 @@
                   let pos = display.getPosition();
                   if (!display.filteredImg) display.filteredImg = this._tileField.filterImg(display.img, display.shadowMask);
                   this._tileField.draw(pos.x, pos.z, pos.y, display.filteredImg);
+                  // this._context.globalCompositeOperation = 'multiply';
                 }
               }
             }

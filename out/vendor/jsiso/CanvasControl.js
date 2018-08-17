@@ -124,8 +124,12 @@ var CanvasControl = (function() {
   * @param {Number} height
   */
   function _update(w, h) {
-    canvasElement.width = w || window.innerWidth;
-    canvasElement.height = h || window.innerHeight;
+    w = w || window.innerWidth;
+    h = h || window.innerHeight;
+    canvasElement.style.width = w + "px";
+    canvasElement.style.height = h + "px";
+    canvasElement.width = w;
+    canvasElement.height = h;
   }
 
 
