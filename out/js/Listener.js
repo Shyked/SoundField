@@ -38,20 +38,27 @@ class Listener extends EventHandler {
     this.setPosition(this._x + dx, this._y + dy, this._z + dz);
   };
 
-  setOrientation(x, y, z) {
-    if (typeof y == 'undefined') {
-      var angle = x;
-      var pos = window.utils.toXY({ angle: angle, dist: 1 });
-      x = pos.x;
-      y = 0;
-      z = pos.y;
-    }
+  setOrientation(angle) {
+    let pos = window.utils.toXY({ angle: angle, dist: 1 });
+    let x = pos.x;
+    let y = 0;
+    let z = pos.y;
+
     x = window.utils.roundToDecimal(x, 5);
     y = window.utils.roundToDecimal(y, 5);
     z = window.utils.roundToDecimal(z, 5);
-    this._listener.setOrientation(x, y, z, 0, 1, 0);
-    if (this._display) this._display.setOrientation(x, y, z);
+    this._listener.setOrientation(x, y, z, 0, 0, 0);
+
+    if (this._display) this._display.setOrientation(angle);
   };
+
+  moving() {
+    this._display.startAnimation();
+  }
+
+  stop() {
+    this._display.stopAnimation();
+  }
 
   destroy() {
     this._trigger('destroy');

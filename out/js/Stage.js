@@ -32,6 +32,8 @@ class Stage extends EventHandler {
     this._mover.on('move', (x, y, z, angle) => {
       this._updateListenerPosition(x, y, z, angle);
     });
+    this._mover.on('moving', () => { this._listener.moving(); })
+    this._mover.on('stop', () => { this._listener.stop(); })
     this._camera = new Camera();
     this._camera.on('move', (x, y, z) => {
       Drawer.moveCamera(x, y, z);

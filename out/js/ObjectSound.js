@@ -17,7 +17,9 @@ class ObjectSound extends EventHandler {
     this._y = 0;
     this._z = 0;
     this._distance = 0;
-    this._scope = scope || 15;
+    this._playing = false;
+    this._minDistance = 1;
+    this._scope = scope || 10;
     this._audioElement = null;
     this._audioSource = null;
     this._offline = !!this._master.context.length;
@@ -69,7 +71,7 @@ class ObjectSound extends EventHandler {
     var panner = this._master.context.createPanner();
     panner.panningModel = 'HRTF';
     panner.distanceModel = 'inverse';
-    panner.refDistance = 1;
+    panner.refDistance = this._minDistance;
     panner.maxDistance = this._scope;
     panner.rolloffFactor = 1;
     panner.coneInnerAngle = 360;
@@ -95,13 +97,13 @@ class ObjectSound extends EventHandler {
 
   _updateGains() {
     var updateGains = () => {
-      let globalGain = (Math.sin(-Math.min(1, (this._distance / this._scope * 2 - 1)) * Math.PI / 2) + 1) / 2;
-      // let convolverGain = -globalGain + 1;
+      let globalGain = (Math.sin(-Math.min(1, (Math.max(0, this._distance - this._minDistance) / this._scope * 2 - 1)) * Math.PI / 2) + 1) / 2;
       let convolverGain = -globalGain * 1.5 + 1.5;
       let dryGain = globalGain;
       this._dryGain.gain.setValueAtTime(dryGain * globalGain, this._master.context.currentTime);
       this._convolverGain.gain.setValueAtTime(convolverGain * globalGain, this._master.context.currentTime);
-      console.log(convolverGain + " " + globalGain);
+      if (this._playing && globalGain <= 0) this.pause();
+      if (!this._playing && globalGain > 0) this.play();
     };
     if (this._offline) updateGains();
     else {
@@ -118,15 +120,19 @@ class ObjectSound extends EventHandler {
   play() {
     this._panner.connect(this._master);
     this._audioElement.play();
+    this._playing = true;
+    console.log("PLAY " + this._url);
   };
 
   pause() {
     this._audioElement.pause();
     this._panner.disconnect();
+    this._playing = false;
+    console.log("PAUSE " + this._url);
   }
 
   stop() {
-    this._audioElement.pause();
+    this.pause();
     this._audioElement.currentTime = 0;
   };
 
@@ -189,7 +195,7 @@ ObjectSound.predefinedImpulse = function(name) {
     }
     else {
       let xhr = new XMLHttpRequest();
-      xhr.onload  = function() {
+      xhr.onload = function() {
         let audioData = xhr.response;
 
         AUDIO_CONTEXT.decodeAudioData(audioData,

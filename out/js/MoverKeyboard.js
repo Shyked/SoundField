@@ -153,12 +153,16 @@ class MoverKeyboard extends Mover {
           this._loop();
         });
       }
-      else this._looping = false;
+      else {
+        this._looping = false;
+        this._trigger('stop');
+      }
     }
   };
 
   _startLoop() {
     if (!this._looping) {
+      this._trigger('moving');
       this._looping = true;
       this._loop();
     }

@@ -48,13 +48,33 @@
       "pos": { "x": 11, "y": 3, "z": 4 }
     },
     {
-      "skin": "tree",
-      "pos": { "x": 0, "y": 1, "z": 2 }
+      "sound": "tapping.ogg",
+      "skin": "source",
+      "pos": { "x": 2, "y": 2, "z": 5 }
     },
     {
       "sound": "tapping.ogg",
       "skin": "source",
-      "pos": { "x": 2, "y": 2, "z": 5 }
+      "pos": { "x": 2, "y": 1, "z": 4 }
+    },
+    {
+      "sound": "tapping.ogg",
+      "skin": "source",
+      "pos": { "x": 2, "y": 1, "z": 3 }
+    },
+    {
+      "sound": "tapping.ogg",
+      "skin": "source",
+      "pos": { "x": 2, "y": 1, "z": 2 }
+    },
+    {
+      "sound": "Night road.ogg",
+      "skin": "source_white",
+      "pos": { "x": 3, "y": 1, "z": 2 }
+    },
+    {
+      "skin": "tree",
+      "pos": { "x": 0, "y": 1, "z": 2 }
     },
     {
       "skin": "tree",
@@ -66,7 +86,7 @@
     }
   ],
   "listener": {
-    "skin": "troll",
+    "skin": "temp.sprite",
     "pos": { "x": 8, "y": 1, "z": 9 },
     "size": 0.2
   }
