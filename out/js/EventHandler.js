@@ -1,13 +1,15 @@
 /*
-    Vanilla
+    Helps creating register and unregister events on DOM
+    Also helps creating internal events tied to the object itself and not to DOM elements
 */
 class EventHandler {
 
 
     constructor() {
-        this._events = [];
-        this._extEvents = {};
+        this._extEvents         = [];
+        this._events            = {};
         this._mutationObservers = [];
+        this._eventCheckpoints  = {};
 
         this._initEvents();
     };
@@ -19,33 +21,57 @@ class EventHandler {
     };
 
     /* EXTERNAL */
+    /* For DOM modifications */
 
     _registerEvent(els, event, handler, selector) {
         var that = this;
         if (!Array.isArray(els))
             els = [els];
-        for (var i in els) {
+        for (var i = 0 ; i < els.length ; i++) {
             var el = els[i];
             var handlerOverload = function(e) {
                 if (!selector) handler.apply(that, arguments);
                 else if (e.target.matches(selector)) handler.apply(that, arguments);
             };
-            this._events.push({
+            this._extEvents.push({
                 el: el,
                 event: event,
-                handler: handlerOverload
+                handler: handlerOverload,
+                referenceHandler: handler
             })
             el.addEventListener(event, handlerOverload);
         }
     };
 
+    _unregisterEvent(els, event, handler) {
+        var that = this;
+        if (!Array.isArray(els))
+            els = [els];
+        for (var i = 0 ; i < els.length ; i++) {
+            var el = els[i];
+            var handlerOverload = function(e) {
+                if (!selector) handler.apply(that, arguments);
+                else if (e.target.matches(selector)) handler.apply(that, arguments);
+            };
+            for (var idE = 0 ; idE < this._extEvents.length ; idE++) {
+                if (this._extEvents[idE].el == el
+                    && this._extEvents[idE].event == event
+                    && this._extEvents[idE].referenceHandler == handler) {
+                    el.removeEventListener(this._extEvents[idE], this._extEvents[idE].referenceHandler);
+                    this._extEvents.splice(idE, 1);
+                    idE--;
+                }
+            }
+        }
+    }
+
     _unregisterEvents() {
-        for (var i in this._events) {
-            var ev = this._events[i];
+        for (var i = 0 ; i < this._extEvents.length ; i++) {
+            var ev = this._extEvents[i];
             ev.el.removeEventListener(ev.event, ev.handler);
         }
-        this._events = [];
-        for (var i in this._mutationObservers) {
+        this._extEvents = [];
+        for (var i = 0 ; i < this._mutationObservers.length ; i++) {
             this._mutationObservers[i].disconnect();
         }
         this._mutationObservers = [];
@@ -61,11 +87,13 @@ class EventHandler {
             else {
                 var observer = new MutationObserver(function (mutationsList) {
                     for (var idM in mutationsList) {
-                        if (mutationsList[idM].type == 'childList') {
-                            mutationsList[idM].removedNodes.forEach(function (removedNode) {
-                                if (removedNode == el)
-                                    handler();
-                            });
+                        if ({}.hasOwnProperty.call(mutationsList, idM)) {
+                            if (mutationsList[idM].type == 'childList') {
+                                mutationsList[idM].removedNodes.forEach(function (removedNode) {
+                                    if (removedNode == el)
+                                        handler();
+                                });
+                            }
                         }
                     }
                 });
@@ -81,10 +109,12 @@ class EventHandler {
         if (MutationObserver) {
             var observer = new MutationObserver(function (mutationsList) {
                 for (var idM in mutationsList) {
-                    if (mutationsList[idM].type == 'childList') {
-                        mutationsList[idM].addedNodes.forEach(function(el) {
-                            handler(el);
-                        });
+                    if ({}.hasOwnProperty.call(mutationsList, idM)) {
+                        if (mutationsList[idM].type == 'childList') {
+                            mutationsList[idM].addedNodes.forEach(function(el) {
+                                handler(el);
+                            });
+                        }
                     }
                 }
             });
@@ -95,54 +125,108 @@ class EventHandler {
     };
 
     /* INTERNAL */
+    /* Triggered with JS */
 
     _trigger(ev) {
-        var deleteListeners = [];
-        for (var i in this._extEvents[ev]) {
-            this._extEvents[ev][i].handler.apply(this, Array.prototype.slice.call(arguments, 1));
-            if (this._extEvents[ev][i].times != -1) {
-                this._extEvents[ev][i].times--;
-                if (this._extEvents[ev][i].times == 0) {
-                    deleteListeners.push(i);
+        if (this._events[ev]) {
+            var deleteListeners = [];
+            var handlersCopy = [];
+            for (var i = 0 ; i < this._events[ev].length ; i++)
+                handlersCopy.push(this._events[ev][i]);
+            for (var i = 0 ; i < handlersCopy.length ; i++) {
+                handlersCopy[i].handler.apply(this, Array.prototype.slice.call(arguments, 1));
+                if (!handlersCopy[i]) i--;
+                else {
+                    if (handlersCopy[i].times != -1) {
+                        handlersCopy[i].times--;
+                        if (handlersCopy[i].times == 0) {
+                            deleteListeners.push(handlersCopy[i]);
+                        }
+                    }
                 }
             }
-        }
-        if (deleteListeners.length > 0) {
-            deleteListeners.reverse();
-            for (var i in deleteListeners) {
-                this._extEvents[ev].splice(deleteListeners[i], 1);
+            if (deleteListeners.length > 0) {
+                for (var i = 0 ; i < deleteListeners.length ; i++) {
+                    this.off(ev, deleteListeners[i])
+                }
             }
         }
     };
 
     on(ev, handler, times) {
-        if (!this._extEvents[ev]) this._extEvents[ev] = [];
-        this._extEvents[ev].push({
+        if (!this._events[ev]) this._events[ev] = [];
+        this._events[ev].push({
             handler: handler,
             times: times || -1
         });
+        return { event: ev, handler: handler };
     };
 
     once(ev, handler) {
-        this.on(ev, handler, 1);
+        return this.on(ev, handler, 1);
+    };
+
+    off(ev, handler) {
+        if (this._events[ev]) {
+            for (var i = 0 ; i < this._events[ev].length ; i++) {
+                if (this._events[ev][i].handler == handler) {
+                    this._events[ev].splice(i, 1);
+                    return
+                }
+            }
+        }
+    };
+
+    /* CHECKPOINT */
+    /* Ensures a certain event happened before continuing */
+
+    /**
+     * await when('you-are-ready')
+     * when('you-are-ready', () => {})
+     * 
+     * @param  {string}   eventName
+     * @param  {function} callback  (optional)
+     * @return {Promise}
+     */
+    when(eventName, callback) {
+        return new Promise((resolve, reject) => {
+            if (!this._eventCheckpoints[eventName]) this._eventCheckpoints[eventName] = [];
+            if (this._eventCheckpoints[eventName] === true) {
+                resolve();
+                if (callback) callback();
+            }
+            else {
+                this._eventCheckpoints[eventName].push(resolve);
+                if (callback) this._eventCheckpoints[eventName].push(callback);
+            }
+        });
+    };
+
+    _eventHappened(eventName) {
+        if (Array.isArray(this._eventCheckpoints[eventName])) {
+            this._eventCheckpoints[eventName].forEach(resolve => {
+                resolve();
+            });
+        }
+        this._eventCheckpoints[eventName] = true;
     };
 
 };
 
 
-// Compatibility
+// Polyfill
 
 if (!Element.prototype.matches) {
-    Element.prototype.matches = 
-        Element.prototype.matchesSelector || 
+    Element.prototype.matches =
+        Element.prototype.matchesSelector ||
         Element.prototype.mozMatchesSelector ||
-        Element.prototype.msMatchesSelector || 
-        Element.prototype.oMatchesSelector || 
+        Element.prototype.msMatchesSelector ||
+        Element.prototype.oMatchesSelector ||
         Element.prototype.webkitMatchesSelector ||
         function(s) {
             var matches = (this.document || this.ownerDocument).querySelectorAll(s),
                 i = matches.length;
             while (--i >= 0 && matches.item(i) !== this) {}
-            return i > -1;            
+            return i > -1;
         };
 }
