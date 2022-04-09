@@ -105,10 +105,7 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
       let xpos, ypos, widht, height;
 
       if (objectImg) {
-        width = objectImg.width;
-        height = objectImg.height;
-        xpos = ((i - j) * (tileWidth / 2) + (tileWidth - objectImg.width) / 2) * curZoom;
-        ypos = ((i + j) * (tileHeight / 2) + (k - 1) * (-tileSideHeight) + tileHeight - objectImg.height) * curZoom;
+        [xpos, ypos, width, height] = _getObjectBox(i, j, k, objectImg);
       }
       else {
         width = tileCache[i][j][k].width;
@@ -582,6 +579,14 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
     else return null;
   }
 
+  function _getObjectBox(i, j, k, objectImg) {
+    let width = objectImg.width;
+    let height = objectImg.height;
+    let xpos = ((i - j) * (tileWidth / 2) + (tileWidth - width) / 2) * curZoom;
+    let ypos = ((i + j) * (tileHeight / 2) + (k - 1) * (-tileSideHeight) + tileHeight - height) * curZoom;
+    return [xpos, ypos, width, height];
+  }
+
   function _setZoom(dir) {
     if (Number(dir)) {
       curZoom = dir;
@@ -705,6 +710,10 @@ var TileField = function(ctx, mapWidth, mapHeight, mapLayout) {
 
     setHeightmapTile: function(tileX, tileY, val) {
       _setHeightmapTile(tileX, tileY, val);
+    },
+
+    getObjectBox: function(i, j, k, objectImg) {
+      _getObjectBox(i, j, k, objectImg);
     },
 
     setZoom: function(direction) {

@@ -1,5 +1,10 @@
 (function() {
 
+  const TILE_HEIGHT = 100;
+  const TILE_WIDTH = 200;
+  const TILE_SIDE_HEIGHT = 110;
+  const TILE_EDGES = 10;
+
   class Drawer extends EventHandler {
 
     constructor() {
@@ -9,6 +14,8 @@
       this._context = null;
       this._tileField = null;
       this._zoom = 0.8;
+
+      this._areasToRefresh = [];
 
       this._depth = 0;
 
@@ -42,10 +49,10 @@
         layout: this._mapProps.layout,
         graphics: imgResponse.files,
         graphicsDictionary: imgResponse.dictionary,
-        tileHeight: 100,
-        tileWidth: 200,
-        tileSideHeight: 110,
-        tileEdges: 10,
+        tileHeight: TILE_HEIGHT,
+        tileWidth: TILE_WIDTH,
+        tileSideHeight: TILE_SIDE_HEIGHT,
+        tileEdges: TILE_EDGES,
         tilesHeightOffset: this._mapProps.tilesHeightOffset,
         shadowSide: 1,
         filters: this._mapProps.filters
@@ -108,6 +115,15 @@
           }
         }
       }
+    }
+
+    getAreasToRefresh() {
+
+    }
+
+    getDisplayBox(display) {
+      let pos = display.getPosition();
+      Drawer.getObjectBox(pos.x, pos.z, pos.y, display.filteredImg);
     }
 
     moveCamera(x, y, z) {
